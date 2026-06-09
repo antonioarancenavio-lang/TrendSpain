@@ -29,6 +29,12 @@ function XIcon({ size=16 }) {
 }
 
 // ─── AUTH MODAL ───────────────────────────────────────────────────────────────
+useEffect(() => {
+    // ESCUDO DE SEGURIDAD: Si supabase es null, evita que la web se rompa
+    if (!supabase) return;
+
+    // Comprobar sesión
+    supabase.auth.getSession().then(({ data: { session } }) => {
 function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = useState("login"); // login | register
   const [email, setEmail] = useState("");
