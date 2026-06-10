@@ -1,0 +1,315 @@
+bash
+
+cat > /mnt/user-data/outputs/registro.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crear cuenta</title>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .logo { font-size: 20px; font-weight: 600; margin-bottom: 1.5rem; color: #111; }
+    h1 { font-size: 20px; font-weight: 600; color: #111; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+
+    .social-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    .social-btn:hover { background: #f9fafb; }
+    .social-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .social-btn svg { flex-shrink: 0; }
+
+    .divider { display: flex; align-items: center; gap: 10px; margin: 1.25rem 0; }
+    .divider-line { flex: 1; height: 1px; background: #e5e5e5; }
+    .divider-text { font-size: 12px; color: #999; }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+    .field input.input-error { border-color: #dc2626; }
+
+    .pass-wrap { position: relative; }
+    .pass-wrap input { padding-right: 40px; }
+    .pass-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 0;
+      color: #9ca3af; font-size: 18px; display: flex; align-items: center;
+    }
+    .pass-toggle:hover { color: #6b7280; }
+
+    .submit-btn {
+      width: 100%; padding: 11px; border-radius: 8px;
+      background: #111; color: #fff; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      margin-top: 4px; transition: opacity 0.15s;
+    }
+    .submit-btn:hover { opacity: 0.85; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg { font-size: 12px; color: #dc2626; margin-top: 4px; display: none; }
+
+    .alert {
+      padding: 10px 14px; border-radius: 8px; font-size: 13px;
+      margin-bottom: 1rem; display: none;
+    }
+    .alert-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .alert-error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+    .terms { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 12px; line-height: 1.6; }
+    .terms a { color: #6b7280; text-decoration: underline; }
+    .footer-text { font-size: 13px; color: #6b7280; text-align: center; margin-top: 1.25rem; }
+    .footer-text a { color: #111; font-weight: 500; text-decoration: underline; }
+
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">◈ MiApp</div>
+  <h1>Crear cuenta</h1>
+  <p class="subtitle">Regístrate para empezar</p>
+
+  <div id="alert-box" class="alert"></div>
+
+  <!-- Google -->
+  <button class="social-btn" id="btn-google" onclick="loginConGoogle()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+    Continuar con Google
+  </button>
+
+  <!-- Apple -->
+  <button class="social-btn" id="btn-apple" onclick="loginConApple()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+    </svg>
+    Continuar con Apple
+  </button>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <span class="divider-text">o con correo</span>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="field">
+    <label for="email">Correo electrónico</label>
+    <input type="email" id="email" placeholder="ana@ejemplo.com" autocomplete="email" />
+    <p class="error-msg" id="email-error">Introduce un correo válido.</p>
+  </div>
+
+  <div class="field">
+    <label for="password">Contraseña</label>
+    <div class="pass-wrap">
+      <input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+      <button class="pass-toggle" type="button" onclick="togglePassword()" aria-label="Mostrar contraseña">👁</button>
+    </div>
+    <p class="error-msg" id="pass-error">La contraseña debe tener al menos 8 caracteres.</p>
+  </div>
+
+  <button class="submit-btn" id="btn-submit" onclick="registrarse()">Crear cuenta</button>
+
+  <p class="terms">
+    Al registrarte aceptas nuestros
+    <a href="/terminos">Términos de uso</a> y
+    <a href="/privacidad">Política de privacidad</a>
+  </p>
+  <p class="footer-text">
+    ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+  </p>
+</div>
+
+<script>
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔧 CONFIGURACIÓN — cambia estos dos valores
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const SUPABASE_URL    = 'https://xxxxxxxxxxxx.supabase.co';   // Project URL
+  const SUPABASE_ANON   = 'tu-anon-public-key';                 // anon/public key
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ─── Helpers UI ───────────────────────────────────────────────
+  function mostrarAlerta(msg, tipo = 'error') {
+    const box = document.getElementById('alert-box');
+    box.className = 'alert alert-' + tipo;
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  function ocultarAlerta() {
+    document.getElementById('alert-box').style.display = 'none';
+  }
+
+  function setLoading(activo) {
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = activo;
+    btn.innerHTML = activo
+      ? '<span class="spinner"></span>Creando cuenta...'
+      : 'Crear cuenta';
+    document.getElementById('btn-google').disabled = activo;
+    document.getElementById('btn-apple').disabled  = activo;
+  }
+
+  function togglePassword() {
+    const input = document.getElementById('password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+
+  // ─── Registro con email + contraseña ─────────────────────────
+  async function registrarse() {
+    ocultarAlerta();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    let valido = true;
+
+    const emailError = document.getElementById('email-error');
+    const passError  = document.getElementById('pass-error');
+    const emailInput = document.getElementById('email');
+    const passInput  = document.getElementById('password');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      emailError.style.display = 'block';
+      emailInput.classList.add('input-error');
+      valido = false;
+    } else {
+      emailError.style.display = 'none';
+      emailInput.classList.remove('input-error');
+    }
+
+    if (password.length < 8) {
+      passError.style.display = 'block';
+      passInput.classList.add('input-error');
+      valido = false;
+    } else {
+      passError.style.display = 'none';
+      passInput.classList.remove('input-error');
+    }
+
+    if (!valido) return;
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
+
+    if (error) {
+      mostrarAlerta(error.message, 'error');
+      return;
+    }
+
+    // Supabase envía un email de confirmación por defecto
+    // Si tienes "Confirm email" desactivado en el dashboard, el usuario entra directo
+    if (data.user && data.user.identities?.length === 0) {
+      mostrarAlerta('Este correo ya está registrado. ¿Quieres iniciar sesión?', 'error');
+      return;
+    }
+
+    mostrarAlerta('¡Cuenta creada! Revisa tu correo para confirmar el registro.', 'success');
+  }
+
+  // ─── Google OAuth (Supabase) ──────────────────────────────────
+  // Pasos previos en Supabase Dashboard:
+  //   Authentication → Providers → Google → Enable
+  //   Añade tu Client ID y Secret de Google Cloud Console
+  //   Redirect URL: https://xxxx.supabase.co/auth/v1/callback
+  async function loginConGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/dashboard', // cambia a tu ruta post-login
+      },
+    });
+    if (error) mostrarAlerta(error.message, 'error');
+  }
+
+  // ─── Apple Sign In (Supabase) ─────────────────────────────────
+  // Pasos previos en Supabase Dashboard:
+  //   Authentication → Providers → Apple → Enable
+  //   Necesitas Apple Developer Program + configurar Sign in with Apple
+  async function loginConApple() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: window.location.origin + '/dashboard', // cambia a tu ruta post-login
+      },
+    });
+    if (error) mostrarAlerta(error.message, 'error');
+  }
+
+  // ─── Detectar sesión activa al cargar ────────────────────────
+  // Útil si el usuario vuelve tras confirmar el email o tras OAuth
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      // Redirige al usuario a tu app una vez autenticado
+      // window.location.href = '/dashboard';
+      console.log('Usuario autenticado:', session.user.email);
+    }
+  });
+</script>
+
+</body>
+</html>
+HTMLEOF
+Salida
+
+exit code 0
