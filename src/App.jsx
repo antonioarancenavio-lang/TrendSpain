@@ -712,16 +712,21 @@ export default function App() {
               {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
                 const categoria = STATIC_MARKET[categoriaKey];
                 return (categoria.datos || []).map((item, index) => (
+       {activeTab === "trends" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
+                const categoria = STATIC_MARKET[categoriaKey];
+                return (categoria.datos || []).map((item, index) => (
                   <TarjetaOportunidad 
                     key={`${categoriaKey}-${index}`}
                     trend={{
                       nombre: item.nombre,
-                      emoji: "💡",
-                      isPremium: true, 
+                      emoji: index % 2 === 0 ? "🚀" : "💡",
+                      isPremium: true, // Ponlo en true para activar los candados
                       inversion: "Bajo Coste (<300€)",
                       tiempo: "1-3 días",
-                      herramientas: "No-Code / Redes Sociales",
-                      estrategia: `Plan de acción para España: Valida ${item.nombre} montando una landing page sencilla. El mercado en USA ya factura ${item.mercadoUSA}M, mientras que en España el volumen actual es de ${item.mercadoES}M con un crecimiento del ${item.crecimiento}%.`
+                      herramientas: "No-Code / Redes",
+                      estrategia: `Plan para España: Valida ${item.nombre} montando una landing page. El mercado en USA ya factura ${item.mercadoUSA}M, mientras que en España el volumen actual es de ${item.mercadoES}M con un crecimiento del ${item.crecimiento}%.`
                     }}
                   />
                 ));
