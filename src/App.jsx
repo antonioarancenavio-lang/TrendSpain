@@ -33,6 +33,87 @@ const C = {
   pink:       "#f472b6",
 };
 
+function TarjetaOportunidad({ trend, tokensGratis, haPagado, stripeLink }) {
+  // Si no es premium o si tienes tokens o has pagado, tienes acceso
+  const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
+
+  return (
+    <div 
+      style={{ backgroundColor: C.card, borderColor: C.border }} 
+      className="border rounded-xl p-6 text-white shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
+    >
+      {/* Etiquetas superiores */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex flex-wrap gap-2">
+          <span 
+            style={{ backgroundColor: C.goldBg, borderColor: C.borderGold, color: C.gold }} 
+            className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
+          >
+            {trend.inversion || "Bajo Coste (<300€)"}
+          </span>
+          {trend.tiempo && (
+            <span 
+              style={{ backgroundColor: C.surface, borderColor: C.border }} 
+              className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
+            >
+              ⏱️ {trend.tiempo}
+            </span>
+          )}
+        </div>
+        {trend.isPremium && (
+          <span style={{ color: C.gold, borderColor: C.borderGold }} className="text-xs border px-2 py-0.5 rounded font-bold uppercase">
+            PRO
+          </span>
+        )}
+      </div>
+
+      {/* Título */}
+      <h3 style={{ color: C.text }} className="text-xl font-bold mb-2 flex items-center gap-2">
+        <span>{trend.emoji || "💡"}</span>
+        <span>{trend.nombre}</span>
+      </h3>
+      
+      {/* Herramientas */}
+      <div className="space-y-2 my-3 text-sm">
+        <p>
+          <strong style={{ color: C.text }}>Herramientas:</strong>{" "}
+          <span style={{ color: C.textMuted }}>{trend.herramientas || "No-Code / Gratuitas"}</span>
+        </p>
+      </div>
+
+      <hr style={{ borderColor: C.border }} className="my-4" />
+
+      {/* Estrategia de negocio con desenfoque */}
+      <div className="relative">
+        <div className={`space-y-3 transition-all duration-300 ${!tieneAcceso ? 'blur-md select-none pointer-events-none opacity-20' : ''}`}>
+          <h4 style={{ color: C.gold }} className="text-sm font-semibold uppercase tracking-wider">
+            🎯 Plan de Acción para España:
+          </h4>
+          <p style={{ color: C.textMuted }} className="text-sm leading-relaxed whitespace-pre-line">
+            {trend.estrategia || "Guía detallada para implementarlo en España."}
+          </p>
+        </div>
+
+        {/* Candado de Pago */}
+        {!tieneAcceso && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/10 backdrop-blur-[1px] rounded-xl">
+            <p style={{ color: C.text }} className="text-sm font-medium mb-3">
+              🔒 Desbloquea la estrategia para este negocio
+            </p>
+            <a 
+              href={stripeLink}
+              style={{ backgroundColor: C.gold, color: C.bg }}
+              className="font-bold text-xs py-2.5 px-5 rounded-lg transition-transform hover:scale-105 shadow-lg uppercase tracking-wider"
+            >
+              Suscribirse para ver
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TRENDS = [
   { id:1,  nombre:"Dark Kitchen con Suscripción",        emoji:"🍱", sector:"Food & Drink",    potencial:"Alta",  dificultad:"Fácil",    resumen:"Cocinas fantasma con planes de comida semanal por suscripción, sin local físico.", por_que:"En EE.UU. el modelo dark kitchen explotó post-COVID. Añadir suscripción mensual garantiza ingresos recurrentes y reduce el desperdicio.", como_aplicar:"España tiene cultura gastronómica altísima pero poca oferta de comida saludable por suscripción. Ciudades medianas como Valencia o Bilbao son ideales.", riesgos:["Logística propia o dependencia de Glovo/Uber","Fidelización difícil si la calidad baja","Regulación sanitaria estricta"], pasos:["Alquilar espacio en una cloud kitchen","Definir nicho: vegano, mediterráneo o menú ejecutivo","Lanzar con 50 suscriptores piloto","Automatizar pedidos con Shopify"] },
   { id:2,  nombre:"Clínicas de Salud Mental Online",     emoji:"🧠", sector:"Salud",            potencial:"Alta",  dificultad:"Moderada", resumen:"Plataformas que conectan psicólogos con pacientes por videollamada.", por_que:"BetterHelp factura más de 700M$ anuales. La pandemia normalizó la terapia online y la demanda no ha bajado.", como_aplicar:"España tiene lista de espera de meses en salud mental pública. Diferenciarse por especialidad y precio accesible es la clave.", riesgos:["Necesitas psicólogos colegiados","Competencia de apps internacionales","Retención si el paciente prefiere presencial"], pasos:["Montar plataforma con Calendly + Stripe + Zoom","Reclutar 5-10 psicólogos autónomos","Nicho inicial: ansiedad laboral B2B","Certificar cumplimiento LOPD/RGPD"] },
