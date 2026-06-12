@@ -712,7 +712,27 @@ export default function App() {
         {(activeTab === "trends" || activeTab === "favorites") && (
           <>
             {activeTab === "trends" && <MarketChart sector={sector} />}
-
+{activeTab === "trends" && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px", marginTop: "24px" }}>
+              {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
+                const categoria = STATIC_MARKET[categoriaKey];
+                return (categoria.datos || []).map((item, index) => (
+                  <TarjetaOportunidad 
+                    key={`${categoriaKey}-${index}`}
+                    trend={{
+                      nombre: item.nombre,
+                      emoji: "💡",
+                      isPremium: true, 
+                      inversion: "Bajo Coste (<300€)",
+                      tiempo: "1-3 días",
+                      herramientas: "No-Code / Redes Sociales",
+                      estrategia: `Plan de acción para España: Valida ${item.nombre} montando una landing page sencilla. El mercado en USA ya factura ${item.mercadoUSA}M, mientras que en España el volumen actual es de ${item.mercadoES}M con un crecimiento del ${item.crecimiento}%.`
+                    }}
+                  />
+                ));
+              })}
+            </div>
+          )}
             {activeTab === "favorites" && favorites.length === 0 && (
               <div style={{ textAlign:"center", padding:"40px 20px" }}>
                 <p style={{ fontSize:32, margin:"0 0 12px" }}>🤍</p>
