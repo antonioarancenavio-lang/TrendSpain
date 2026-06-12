@@ -33,8 +33,14 @@ const C = {
   pink:       "#f472b6",
 };
 
-function TarjetaOportunidad({ trend, tokensGratis, haPagado, stripeLink }) {
-  // Si no es premium o si tienes tokens o has pagado, tienes acceso
+function TarjetaOportunidad({ trend }) {
+  // CONFIGURACIÓN LOCAL DE ACCESSOS: 
+  // Modifica el "2" si quieres cambiar las fichas gratis, o pon true/false en haPagado
+  const tokensGratis = 2; 
+  const haPagado = false; 
+  const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
+
+  // Evalúa si el usuario tiene acceso a este negocio
   const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
 
   return (
@@ -42,7 +48,7 @@ function TarjetaOportunidad({ trend, tokensGratis, haPagado, stripeLink }) {
       style={{ backgroundColor: C.card, borderColor: C.border }} 
       className="border rounded-xl p-6 text-white shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
     >
-      {/* Etiquetas superiores */}
+      {/* Etiquetas superiores (Inversión y Tiempo) */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-wrap gap-2">
           <span 
@@ -67,13 +73,13 @@ function TarjetaOportunidad({ trend, tokensGratis, haPagado, stripeLink }) {
         )}
       </div>
 
-      {/* Título */}
+      {/* Título e Icono */}
       <h3 style={{ color: C.text }} className="text-xl font-bold mb-2 flex items-center gap-2">
         <span>{trend.emoji || "💡"}</span>
         <span>{trend.nombre}</span>
       </h3>
       
-      {/* Herramientas */}
+      {/* Herramientas sugerizadas */}
       <div className="space-y-2 my-3 text-sm">
         <p>
           <strong style={{ color: C.text }}>Herramientas:</strong>{" "}
@@ -83,18 +89,18 @@ function TarjetaOportunidad({ trend, tokensGratis, haPagado, stripeLink }) {
 
       <hr style={{ borderColor: C.border }} className="my-4" />
 
-      {/* Estrategia de negocio con desenfoque */}
+      {/* Contenido con efecto borroso si está bloqueado */}
       <div className="relative">
         <div className={`space-y-3 transition-all duration-300 ${!tieneAcceso ? 'blur-md select-none pointer-events-none opacity-20' : ''}`}>
           <h4 style={{ color: C.gold }} className="text-sm font-semibold uppercase tracking-wider">
             🎯 Plan de Acción para España:
           </h4>
           <p style={{ color: C.textMuted }} className="text-sm leading-relaxed whitespace-pre-line">
-            {trend.estrategia || "Guía detallada para implementarlo en España."}
+            {trend.estrategia || "Guía detallada para implementarlo en España de forma sencilla."}
           </p>
         </div>
 
-        {/* Candado de Pago */}
+        {/* Muro de Pago (Paywall) */}
         {!tieneAcceso && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/10 backdrop-blur-[1px] rounded-xl">
             <p style={{ color: C.text }} className="text-sm font-medium mb-3">
