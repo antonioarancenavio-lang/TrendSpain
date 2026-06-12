@@ -34,64 +34,65 @@ const C = {
 };
 
 function TarjetaOportunidad({ trend }) {
-  // CONFIGURACIÓN DE ACCESO LOCAL
-  const tokensGratis = 2; 
-  const haPagado = false; 
-  const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
+  // Ajustamos la lógica con tus variables reales del inicio del archivo
+  const tokensGratis = 0; // Cambia a 0 para ver cómo se bloquean, o usa tu estado dinámico
+  const haPagado = false;
 
+  // Si es premium y no se ha pagado ni quedan tokens, se bloquea
   const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
+  const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
 
   return (
     <div 
       style={{ backgroundColor: C.card, borderColor: C.border }} 
-      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] hover:shadow-2xl flex flex-col justify-between min-h-[280px]"
+      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] flex flex-col justify-between min-h-[260px] shadow-lg"
     >
       <div>
-        {/* Cabecera estilizada de Categoría / Tags */}
-        <div className="flex justify-between items-center mb-3">
+        {/* Cabecera sutil: Inversión y Tiempo */}
+        <div className="flex justify-between items-center mb-3 text-[11px]">
           <span 
             style={{ color: C.gold }} 
-            className="text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
+            className="font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
           >
             {trend.inversion || "Bajo Coste"}
           </span>
           {trend.tiempo && (
-            <span style={{ color: C.textMuted }} className="text-xs flex items-center gap-1 opacity-80">
+            <span style={{ color: C.textMuted }} className="flex items-center gap-1 opacity-80">
               ⏱️ {trend.tiempo}
             </span>
           )}
         </div>
 
-        {/* Título limpio e Icono */}
+        {/* Título fino con su Emoji */}
         <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
           <span className="text-xl">{trend.emoji || "💡"}</span>
           <span>{trend.nombre}</span>
         </h3>
 
-        {/* Herramientas con diseño sutil */}
-        <p className="text-xs mb-4" style={{ color: C.textMuted }}>
-          <span className="font-semibold" style={{ color: C.textDim }}>Herramientas:</span> {trend.herramientas}
+        {/* Subtítulo de herramientas */}
+        <p className="text-xs mb-3" style={{ color: C.textMuted }}>
+          <span className="font-semibold" style={{ color: C.goldLight }}>Herramientas:</span> {trend.herramientas}
         </p>
 
-        {/* Separador fino */}
-        <div style={{ borderColor: C.border }} className="border-t my-3 opacity-40" />
+        {/* Línea divisoria muy fina */}
+        <div style={{ borderColor: C.border }} className="border-t my-2 opacity-30" />
 
-        {/* Bloque de Estrategia / Muro de pago */}
+        {/* Contenido / Plan de acción con Paywall */}
         <div className="relative mt-2">
-          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[6px] select-none pointer-events-none opacity-10' : ''}`}>
+          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[5px] select-none pointer-events-none opacity-10' : ''}`}>
             <span style={{ color: C.gold }} className="text-[11px] font-bold uppercase tracking-wider block mb-1">
-              🚀 Plan de Acción:
+              🎯 Plan de Acción:
             </span>
             <p style={{ color: C.textMuted }} className="text-xs leading-relaxed font-normal">
               {trend.estrategia}
             </p>
           </div>
 
-          {/* Candado de Pago Premium elegante */}
+          {/* Capa de Bloqueo Premium */}
           {!tieneAcceso && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/5 backdrop-blur-[2px] rounded-xl">
-              <span className="text-lg mb-1.5">🔒</span>
-              <p style={{ color: C.text }} className="text-xs font-semibold mb-2 tracking-tight">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/40 backdrop-blur-[3px] rounded-xl">
+              <span className="text-xl mb-1">🔒</span>
+              <p style={{ color: C.text }} className="text-xs font-bold mb-2 tracking-tight">
                 Contenido exclusivo PRO
               </p>
               <a 
@@ -106,15 +107,14 @@ function TarjetaOportunidad({ trend }) {
         </div>
       </div>
 
-      {/* Pie de tarjeta estético para igualar alturas */}
-      <div className="mt-4 flex justify-between items-center text-[10px]" style={{ color: C.textDim }}>
-        <span>PRO disponible</span>
+      {/* Pie de tarjeta estético para cuadrar espacios */}
+      <div className="mt-4 flex justify-between items-center text-[10px] opacity-60" style={{ color: C.textMuted }}>
+        <span>TrendSpain PRO</span>
         <span style={{ color: C.gold }}>⭐</span>
       </div>
     </div>
   );
 }
-
 const TRENDS = [
   { id:1,  nombre:"Dark Kitchen con Suscripción",        emoji:"🍱", sector:"Food & Drink",    potencial:"Alta",  dificultad:"Fácil",    resumen:"Cocinas fantasma con planes de comida semanal por suscripción, sin local físico.", por_que:"En EE.UU. el modelo dark kitchen explotó post-COVID. Añadir suscripción mensual garantiza ingresos recurrentes y reduce el desperdicio.", como_aplicar:"España tiene cultura gastronómica altísima pero poca oferta de comida saludable por suscripción. Ciudades medianas como Valencia o Bilbao son ideales.", riesgos:["Logística propia o dependencia de Glovo/Uber","Fidelización difícil si la calidad baja","Regulación sanitaria estricta"], pasos:["Alquilar espacio en una cloud kitchen","Definir nicho: vegano, mediterráneo o menú ejecutivo","Lanzar con 50 suscriptores piloto","Automatizar pedidos con Shopify"] },
   { id:2,  nombre:"Clínicas de Salud Mental Online",     emoji:"🧠", sector:"Salud",            potencial:"Alta",  dificultad:"Moderada", resumen:"Plataformas que conectan psicólogos con pacientes por videollamada.", por_que:"BetterHelp factura más de 700M$ anuales. La pandemia normalizó la terapia online y la demanda no ha bajado.", como_aplicar:"España tiene lista de espera de meses en salud mental pública. Diferenciarse por especialidad y precio accesible es la clave.", riesgos:["Necesitas psicólogos colegiados","Competencia de apps internacionales","Retención si el paciente prefiere presencial"], pasos:["Montar plataforma con Calendly + Stripe + Zoom","Reclutar 5-10 psicólogos autónomos","Nicho inicial: ansiedad laboral B2B","Certificar cumplimiento LOPD/RGPD"] },
