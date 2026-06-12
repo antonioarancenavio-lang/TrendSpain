@@ -707,12 +707,9 @@ export default function App() {
         {(activeTab === "trends" || activeTab === "favorites") && (
           <>
             {activeTab === "trends" && <MarketChart sector={sector} />}
-{activeTab === "trends" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px", marginTop: "24px" }}>
-              {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
-                const categoria = STATIC_MARKET[categoriaKey];
-                return (categoria.datos || []).map((item, index) => (
-       {activeTab === "trends" && (
+
+              })}
+            {activeTab === "trends" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
                 const categoria = STATIC_MARKET[categoriaKey];
@@ -722,7 +719,7 @@ export default function App() {
                     trend={{
                       nombre: item.nombre,
                       emoji: index % 2 === 0 ? "🚀" : "💡",
-                      isPremium: true, // Ponlo en true para activar los candados
+                      isPremium: true,
                       inversion: "Bajo Coste (<300€)",
                       tiempo: "1-3 días",
                       herramientas: "No-Code / Redes",
@@ -731,6 +728,8 @@ export default function App() {
                   />
                 ));
               })}
+            </div>
+          )}
             </div>
           )}
             {activeTab === "favorites" && favorites.length === 0 && (
