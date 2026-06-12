@@ -5,7 +5,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
 const SECRET_TOKEN        = "ts_unlock_2025";
 const FREE_TOKENS         = 2;
-const FREE_AI_QUESTIONS   = 1;
 const API_URL             = "/api/chat"; // Vercel Function proxy
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -82,246 +81,93 @@ async function callClaude(system, messages, maxTokens = 1000) {
   return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
 
-// ── MARKET CHART ──────────────────────────────────────────────────────────────
-function MarketChart({ sector }) {
-  const [chartData, setChartData] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
-  const [insight, setInsight]     = useState("");
 
-  const fetchMarketData = async () => {
-    setLoading(true);
-    setError(null);
-    setChartData(null);
-    setInsight("");
-    try {
-      const system = `Eres un analista de mercado experto. Devuelve SOLO un objeto JSON válido, sin texto adicional, sin markdown, sin explicaciones.`;
-      const prompt = `Dame datos de mercado para el sector "${sector === "Todos" ? "los principales sectores de negocio" : sector}" en EE.UU. que aún no están desarrollados en España.
-
-Devuelve exactamente este JSON:
-{
-  "titulo": "string corto descriptivo",
-  "insight": "1 frase clave sobre la oportunidad (máximo 120 caracteres)",
-  "datos": [
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number }
-  ]
-}
-
-Donde:
-- nombre: subsector o empresa referente
-- mercadoUSA: tamaño de mercado en EE.UU. en miles de millones de dólares (número)
-- mercadoES: tamaño estimado en España en miles de millones de euros (número)  
-- crecimiento: crecimiento anual en EE.UU. en % (número entero)
-
-Usa datos reales aproximados de tu conocimiento. Solo el JSON, nada más.`;
-
-      const text = await callClaude(system, [{ role:"user", content:prompt }], 800);
-
-      // Limpiar posibles markdown fences
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      setChartData(parsed.datos);
-      setInsight(parsed.insight);
-    } catch (e) {
-      setError("No se pudo cargar el análisis. Inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchMarketData(); }, [sector]);
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 14px", fontSize:12 }}>
-        <p style={{ color:C.gold, fontWeight:700, margin:"0 0 6px" }}>{label}</p>
-        {payload.map((p, i) => (
-          <p key={i} style={{ color:p.color, margin:"2px 0" }}>{p.name}: <strong>{p.value}B{p.name.includes("EE.UU") ? "$" : "€"}</strong></p>
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 16px", marginBottom:20 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-        <div>
-          <p style={{ fontSize:9, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>📊 Radar de Mercado — EE.UU. vs España</p>
-          <p style={{ fontSize:11, color:C.textMuted, margin:0 }}>Capital que mueve el sector y su brecha con España</p>
-        </div>
-        <button onClick={fetchMarketData} disabled={loading}
-          style={{ background:C.goldBg, border:`1px solid rgba(201,168,76,0.25)`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:11, color:C.gold, fontWeight:700, opacity:loading?0.5:1 }}>
-          {loading ? "..." : "↻ Actualizar"}
-        </button>
-      </div>
-
-      {insight && !loading && (
-        <div style={{ background:"rgba(129,140,248,0.08)", border:"1px solid rgba(129,140,248,0.2)", borderRadius:8, padding:"8px 12px", marginBottom:14, marginTop:10 }}>
-          <p style={{ fontSize:12, color:C.indigo, margin:0, fontWeight:500 }}>✦ {insight}</p>
-        </div>
-      )}
-
-      {loading && (
-        <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:10 }}>
-          <div style={{ width:32, height:32, border:`3px solid ${C.border}`, borderTop:`3px solid ${C.gold}`, borderRadius:"50%", animation:"spin 1s linear infinite" }} />
-          <p style={{ fontSize:12, color:C.textMuted, margin:0 }}>La IA está analizando el mercado...</p>
-        </div>
-      )}
-
-      {error && !loading && (
-        <div style={{ height:120, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <p style={{ fontSize:13, color:C.red, margin:0 }}>{error}</p>
-        </div>
-      )}
-
-      {chartData && !loading && (
-        <>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top:10, right:10, left:-10, bottom:0 }} barGap={4}>
-              <XAxis dataKey="nombre" tick={{ fill:C.textMuted, fontSize:10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill:C.textDim, fontSize:10 }} axisLine={false} tickLine={false} unit="B" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="mercadoUSA" name="EE.UU." radius={[4,4,0,0]} maxBarSize={28}>
-                {chartData.map((_, i) => <Cell key={i} fill={C.gold} opacity={0.85} />)}
-              </Bar>
-              <Bar dataKey="mercadoES" name="España" radius={[4,4,0,0]} maxBarSize={28}>
-                {chartData.map((_, i) => <Cell key={i} fill={C.indigo} opacity={0.75} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display:"flex", gap:16, justifyContent:"center", marginTop:8 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-              <div style={{ width:10, height:10, borderRadius:2, background:C.gold }} />
-              <span style={{ fontSize:10, color:C.textMuted }}>EE.UU. (miles de millones $)</span>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-              <div style={{ width:10, height:10, borderRadius:2, background:C.indigo }} />
-              <span style={{ fontSize:10, color:C.textMuted }}>España (miles de millones €)</span>
-            </div>
-          </div>
-          <div style={{ display:"flex", gap:6, marginTop:12, overflowX:"auto" }}>
-            {chartData.map((d, i) => (
-              <div key={i} style={{ background:C.bg, borderRadius:8, padding:"6px 10px", textAlign:"center", flexShrink:0 }}>
-                <p style={{ fontSize:10, color:C.textMuted, margin:"0 0 2px" }}>{d.nombre}</p>
-                <p style={{ fontSize:13, fontWeight:800, color:C.green, margin:0 }}>+{d.crecimiento}%</p>
-                <p style={{ fontSize:9, color:C.textDim, margin:0 }}>crecimiento USA</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
-
-// ── AI CHAT ───────────────────────────────────────────────────────────────────
-function AIChat({ trend, isPro, aiQuestionsLeft, onUseAiQuestion, onPaywall }) {
-  const [input, setInput]       = useState("");
-  const [messages, setMessages] = useState([
-    { role:"assistant", content:`Hola, soy tu analista de mercado IA. Estoy especializado en **${trend.nombre}** y en cómo llevarlo a España. ¿Qué quieres saber?` }
-  ]);
-  const [loading, setLoading]   = useState(false);
-  const bottomRef               = useRef(null);
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages, loading]);
-
-  const canAsk = isPro || aiQuestionsLeft > 0;
-
-  const send = async () => {
-    if (!input.trim() || loading) return;
-    if (!canAsk) { onPaywall(); return; }
-
-    const userMsg = input.trim();
-    setInput("");
-    setMessages(prev => [...prev, { role:"user", content:userMsg }]);
-    if (!isPro) onUseAiQuestion();
-    setLoading(true);
-
-    try {
-      const system = `Eres un analista experto en tendencias de negocio entre EE.UU. y España. Analiza esta oportunidad:
-
-Nombre: ${trend.nombre} | Sector: ${trend.sector}
-Resumen: ${trend.resumen}
-Por qué funciona en EE.UU.: ${trend.por_que}
-Cómo aplicarlo en España: ${trend.como_aplicar}
-Riesgos: ${trend.riesgos.join(", ")}
-Primeros pasos: ${trend.pasos.join(", ")}
-
-Responde de forma concisa, práctica y directa. Máximo 3 párrafos. En español.`;
-
-      const history = messages.map(m => ({ role:m.role, content:m.content }));
-      history.push({ role:"user", content:userMsg });
-
-      const text = await callClaude(system, history);
-      setMessages(prev => [...prev, { role:"assistant", content: text || "No pude obtener respuesta. Inténtalo de nuevo." }]);
-    } catch {
-      setMessages(prev => [...prev, { role:"assistant", content:"Error de conexión. Inténtalo de nuevo." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ borderTop:`1px solid ${C.border}`, marginTop:20, paddingTop:20 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:16 }}>🤖</span>
-          <p style={{ fontSize:12, fontWeight:700, color:C.gold, margin:0, textTransform:"uppercase", letterSpacing:"0.08em" }}>Analista IA</p>
-        </div>
-        {!isPro && (
-          <span style={{ fontSize:11, color:aiQuestionsLeft > 0 ? C.amber : C.red, fontWeight:600 }}>
-            {aiQuestionsLeft > 0 ? `${aiQuestionsLeft} pregunta gratis` : "Sin preguntas gratuitas"}
-          </span>
-        )}
-      </div>
-
-      <div style={{ background:C.bg, borderRadius:12, padding:14, marginBottom:12, maxHeight:280, overflowY:"auto", display:"flex", flexDirection:"column", gap:10 }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ display:"flex", justifyContent:m.role==="user" ? "flex-end" : "flex-start" }}>
-            <div style={{
-              background: m.role==="user" ? `linear-gradient(135deg,${C.gold},${C.goldLight})` : C.card,
-              color: m.role==="user" ? "#0d0d0f" : C.text,
-              padding:"10px 14px", borderRadius:12, maxWidth:"85%", fontSize:13, lineHeight:1.6,
-              fontWeight: m.role==="user" ? 600 : 400,
-            }}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div style={{ display:"flex", justifyContent:"flex-start" }}>
-            <div style={{ background:C.card, padding:"10px 16px", borderRadius:12, color:C.textMuted, fontSize:13 }}>✦ Analizando...</div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      {canAsk ? (
-        <div style={{ display:"flex", gap:8 }}>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==="Enter" && send()}
-            placeholder={isPro ? "Pregunta lo que quieras..." : "1 pregunta gratis — escribe aquí"}
-            style={{ flex:1, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.text, outline:"none" }} />
-          <button onClick={send} disabled={loading || !input.trim()}
-            style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, border:"none", borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:16, opacity:loading||!input.trim() ? 0.5 : 1 }}>
-            ➤
-          </button>
-        </div>
-      ) : (
-        <button onClick={onPaywall}
-          style={{ width:"100%", background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, border:"none", borderRadius:12, padding:14, fontSize:14, fontWeight:700, cursor:"pointer", color:"#0d0d0f" }}>
-          🔓 Hazte Pro para preguntas ilimitadas — 5€/mes
-        </button>
-      )}
-    </div>
-  );
-}
+// ── DATOS DE MERCADO ESTÁTICOS (EE.UU. vs España) ─────────────────────────────
+const MARKET_DATA = {
+  "Todos": {
+    titulo: "Panorama general de sectores",
+    insight: "Brecha enorme entre EE.UU. y España en todos los sectores clave",
+    datos: [
+      { nombre:"Salud Mental",   mercadoUSA:35, mercadoES:1.2, crecimiento:18 },
+      { nombre:"Fitness Boutique",mercadoUSA:30, mercadoES:0.8, crecimiento:12 },
+      { nombre:"Meal Prep",      mercadoUSA:18, mercadoES:0.4, crecimiento:14 },
+      { nombre:"Live Commerce",  mercadoUSA:55, mercadoES:0.3, crecimiento:30 },
+      { nombre:"SaaS Clínicas",  mercadoUSA:8,  mercadoES:0.2, crecimiento:15 },
+    ]
+  },
+  "Food & Drink": {
+    titulo: "Comida y bebida funcional",
+    insight: "El meal prep y los zumos en frío crecen un 30-40% anual en EE.UU.",
+    datos: [
+      { nombre:"Dark Kitchens",  mercadoUSA:25, mercadoES:0.6, crecimiento:12 },
+      { nombre:"Zumos en Frío",  mercadoUSA:6,  mercadoES:0.15, crecimiento:10 },
+      { nombre:"Meal Prep Fit",  mercadoUSA:18, mercadoES:0.4, crecimiento:14 },
+    ]
+  },
+  "Fitness": {
+    titulo: "Fitness premium y recuperación",
+    insight: "Restore Hyper Wellness y SoulCycle muestran demanda por experiencias premium",
+    datos: [
+      { nombre:"Padel Indoor",   mercadoUSA:4,  mercadoES:0.5, crecimiento:8 },
+      { nombre:"Estudios Boutique",mercadoUSA:30, mercadoES:0.8, crecimiento:12 },
+      { nombre:"Recuperación",   mercadoUSA:12, mercadoES:0.1, crecimiento:20 },
+    ]
+  },
+  "Salud": {
+    titulo: "Salud digital",
+    insight: "BetterHelp factura más de 700M$ con terapia online",
+    datos: [
+      { nombre:"Terapia Online", mercadoUSA:35, mercadoES:1.2, crecimiento:18 },
+      { nombre:"Concierge Mayores",mercadoUSA:5, mercadoES:0.05, crecimiento:25 },
+    ]
+  },
+  "Tech": {
+    titulo: "SaaS y herramientas digitales",
+    insight: "Miles de PYMEs y autónomos españoles aún gestionan todo manualmente",
+    datos: [
+      { nombre:"SaaS Clínicas",  mercadoUSA:8,  mercadoES:0.2, crecimiento:15 },
+      { nombre:"IA para PYMEs",  mercadoUSA:7,  mercadoES:0.1, crecimiento:22 },
+      { nombre:"Finanzas Autónomos",mercadoUSA:10, mercadoES:0.15, crecimiento:17 },
+    ]
+  },
+  "Retail": {
+    titulo: "Retail circular y experiencial",
+    insight: "La compra de segunda mano creció 15x en una década en EE.UU.",
+    datos: [
+      { nombre:"Renting Ropa",   mercadoUSA:3,  mercadoES:0.05, crecimiento:9 },
+      { nombre:"Segunda Mano",   mercadoUSA:20, mercadoES:0.5, crecimiento:16 },
+      { nombre:"Cajas Suscripción",mercadoUSA:15, mercadoES:0.2, crecimiento:11 },
+      { nombre:"Live Commerce",  mercadoUSA:55, mercadoES:0.3, crecimiento:30 },
+    ]
+  },
+  "Servicios": {
+    titulo: "Servicios profesionales",
+    insight: "El turismo y el envejecimiento poblacional crean demanda creciente",
+    datos: [
+      { nombre:"Concierge Mayores",mercadoUSA:5, mercadoES:0.05, crecimiento:25 },
+      { nombre:"Alquiler Vacacional",mercadoUSA:10, mercadoES:1.5, crecimiento:13 },
+      { nombre:"Foto Inmobiliaria",mercadoUSA:2, mercadoES:0.05, crecimiento:10 },
+    ]
+  },
+  "Educación": {
+    titulo: "Educación y formación",
+    insight: "La transición energética genera escasez de técnicos cualificados",
+    datos: [
+      { nombre:"Tutorías IA",    mercadoUSA:9,  mercadoES:0.3, crecimiento:14 },
+      { nombre:"Finanzas Personales",mercadoUSA:5, mercadoES:0.05, crecimiento:12 },
+      { nombre:"Oficios Futuro", mercadoUSA:6,  mercadoES:0.1, crecimiento:19 },
+    ]
+  },
+  "Sostenibilidad": {
+    titulo: "Economía circular y energía",
+    insight: "España genera 900.000 toneladas de residuos electrónicos al año",
+    datos: [
+      { nombre:"Solar Comunitaria",mercadoUSA:8, mercadoES:0.3, crecimiento:21 },
+      { nombre:"Reparación",     mercadoUSA:1.5,mercadoES:0.03, crecimiento:7 },
+      { nombre:"Residuos Hostelería",mercadoUSA:3, mercadoES:0.05, crecimiento:11 },
+    ]
+  },
+};
 
 // ── PAYWALL MODAL ─────────────────────────────────────────────────────────────
 function PaywallModal({ onClose }) {
