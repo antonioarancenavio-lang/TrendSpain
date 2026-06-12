@@ -34,65 +34,121 @@ const C = {
 };
 
 function TarjetaOportunidad({ trend }) {
-  // Ajustamos la lógica con tus variables reales del inicio del archivo
-  const tokensGratis = 0; // Cambia a 0 para ver cómo se bloquean, o usa tu estado dinámico
-  const haPagado = false;
-
-  // Si es premium y no se ha pagado ni quedan tokens, se bloquea
-  const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
+  // CONFIGURACIÓN LOCAL DE ACCESSOS: 
+  // Modifica el "2" si quieres cambiar las fichas gratis, o pon true/false en haPagado
+  // CONFIGURACIÓN DE ACCESO LOCAL
+  const tokensGratis = 2; 
+  const haPagado = false; 
   const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
+
+  // Evalúa si el usuario tiene acceso a este negocio
+  const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
 
   return (
     <div 
       style={{ backgroundColor: C.card, borderColor: C.border }} 
-      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] flex flex-col justify-between min-h-[260px] shadow-lg"
+      className="border rounded-xl p-6 text-white shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
+      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] hover:shadow-2xl flex flex-col justify-between min-h-[280px]"
     >
+      {/* Etiquetas superiores (Inversión y Tiempo) */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex flex-wrap gap-2">
       <div>
-        {/* Cabecera sutil: Inversión y Tiempo */}
-        <div className="flex justify-between items-center mb-3 text-[11px]">
+        {/* Cabecera estilizada de Categoría / Tags */}
+        <div className="flex justify-between items-center mb-3">
           <span 
+            style={{ backgroundColor: C.goldBg, borderColor: C.borderGold, color: C.gold }} 
+            className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
             style={{ color: C.gold }} 
-            className="font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
+            className="text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
           >
+            {trend.inversion || "Bajo Coste (<300€)"}
             {trend.inversion || "Bajo Coste"}
           </span>
           {trend.tiempo && (
-            <span style={{ color: C.textMuted }} className="flex items-center gap-1 opacity-80">
+            <span 
+              style={{ backgroundColor: C.surface, borderColor: C.border }} 
+              className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
+            >
+            <span style={{ color: C.textMuted }} className="text-xs flex items-center gap-1 opacity-80">
               ⏱️ {trend.tiempo}
             </span>
           )}
         </div>
+        {trend.isPremium && (
+          <span style={{ color: C.gold, borderColor: C.borderGold }} className="text-xs border px-2 py-0.5 rounded font-bold uppercase">
+            PRO
+          </span>
+        )}
+      </div>
 
-        {/* Título fino con su Emoji */}
+      {/* Título e Icono */}
+      <h3 style={{ color: C.text }} className="text-xl font-bold mb-2 flex items-center gap-2">
+        <span>{trend.emoji || "💡"}</span>
+        <span>{trend.nombre}</span>
+      </h3>
+      
+      {/* Herramientas sugerizadas */}
+      <div className="space-y-2 my-3 text-sm">
+        <p>
+          <strong style={{ color: C.text }}>Herramientas:</strong>{" "}
+          <span style={{ color: C.textMuted }}>{trend.herramientas || "No-Code / Gratuitas"}</span>
+        {/* Título limpio e Icono */}
         <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
           <span className="text-xl">{trend.emoji || "💡"}</span>
           <span>{trend.nombre}</span>
         </h3>
 
-        {/* Subtítulo de herramientas */}
-        <p className="text-xs mb-3" style={{ color: C.textMuted }}>
-          <span className="font-semibold" style={{ color: C.goldLight }}>Herramientas:</span> {trend.herramientas}
+        {/* Herramientas con diseño sutil */}
+        <p className="text-xs mb-4" style={{ color: C.textMuted }}>
+          <span className="font-semibold" style={{ color: C.textDim }}>Herramientas:</span> {trend.herramientas}
         </p>
+      </div>
 
-        {/* Línea divisoria muy fina */}
-        <div style={{ borderColor: C.border }} className="border-t my-2 opacity-30" />
+      <hr style={{ borderColor: C.border }} className="my-4" />
 
-        {/* Contenido / Plan de acción con Paywall */}
+      {/* Contenido con efecto borroso si está bloqueado */}
+      <div className="relative">
+        <div className={`space-y-3 transition-all duration-300 ${!tieneAcceso ? 'blur-md select-none pointer-events-none opacity-20' : ''}`}>
+          <h4 style={{ color: C.gold }} className="text-sm font-semibold uppercase tracking-wider">
+            🎯 Plan de Acción para España:
+          </h4>
+          <p style={{ color: C.textMuted }} className="text-sm leading-relaxed whitespace-pre-line">
+            {trend.estrategia || "Guía detallada para implementarlo en España de forma sencilla."}
+          </p>
+        </div>
+        {/* Separador fino */}
+        <div style={{ borderColor: C.border }} className="border-t my-3 opacity-40" />
+
+        {/* Muro de Pago (Paywall) */}
+        {!tieneAcceso && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/10 backdrop-blur-[1px] rounded-xl">
+            <p style={{ color: C.text }} className="text-sm font-medium mb-3">
+              🔒 Desbloquea la estrategia para este negocio
+        {/* Bloque de Estrategia / Muro de pago */}
         <div className="relative mt-2">
-          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[5px] select-none pointer-events-none opacity-10' : ''}`}>
+          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[6px] select-none pointer-events-none opacity-10' : ''}`}>
             <span style={{ color: C.gold }} className="text-[11px] font-bold uppercase tracking-wider block mb-1">
-              🎯 Plan de Acción:
+              🚀 Plan de Acción:
             </span>
             <p style={{ color: C.textMuted }} className="text-xs leading-relaxed font-normal">
               {trend.estrategia}
             </p>
+            <a 
+              href={stripeLink}
+              style={{ backgroundColor: C.gold, color: C.bg }}
+              className="font-bold text-xs py-2.5 px-5 rounded-lg transition-transform hover:scale-105 shadow-lg uppercase tracking-wider"
+            >
+              Suscribirse para ver
+            </a>
           </div>
+        )}
 
-          {/* Capa de Bloqueo Premium */}
+          {/* Candado de Pago Premium elegante */}
           {!tieneAcceso && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/40 backdrop-blur-[3px] rounded-xl">
-              <span className="text-xl mb-1">🔒</span>
-              <p style={{ color: C.text }} className="text-xs font-bold mb-2 tracking-tight">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/5 backdrop-blur-[2px] rounded-xl">
+              <span className="text-lg mb-1.5">🔒</span>
+              <p style={{ color: C.text }} className="text-xs font-semibold mb-2 tracking-tight">
                 Contenido exclusivo PRO
               </p>
               <a 
@@ -107,14 +163,15 @@ function TarjetaOportunidad({ trend }) {
         </div>
       </div>
 
-      {/* Pie de tarjeta estético para cuadrar espacios */}
-      <div className="mt-4 flex justify-between items-center text-[10px] opacity-60" style={{ color: C.textMuted }}>
-        <span>TrendSpain PRO</span>
+      {/* Pie de tarjeta estético para igualar alturas */}
+      <div className="mt-4 flex justify-between items-center text-[10px]" style={{ color: C.textDim }}>
+        <span>PRO disponible</span>
         <span style={{ color: C.gold }}>⭐</span>
       </div>
     </div>
   );
 }
+
 const TRENDS = [
   { id:1,  nombre:"Dark Kitchen con Suscripción",        emoji:"🍱", sector:"Food & Drink",    potencial:"Alta",  dificultad:"Fácil",    resumen:"Cocinas fantasma con planes de comida semanal por suscripción, sin local físico.", por_que:"En EE.UU. el modelo dark kitchen explotó post-COVID. Añadir suscripción mensual garantiza ingresos recurrentes y reduce el desperdicio.", como_aplicar:"España tiene cultura gastronómica altísima pero poca oferta de comida saludable por suscripción. Ciudades medianas como Valencia o Bilbao son ideales.", riesgos:["Logística propia o dependencia de Glovo/Uber","Fidelización difícil si la calidad baja","Regulación sanitaria estricta"], pasos:["Alquilar espacio en una cloud kitchen","Definir nicho: vegano, mediterráneo o menú ejecutivo","Lanzar con 50 suscriptores piloto","Automatizar pedidos con Shopify"] },
   { id:2,  nombre:"Clínicas de Salud Mental Online",     emoji:"🧠", sector:"Salud",            potencial:"Alta",  dificultad:"Moderada", resumen:"Plataformas que conectan psicólogos con pacientes por videollamada.", por_que:"BetterHelp factura más de 700M$ anuales. La pandemia normalizó la terapia online y la demanda no ha bajado.", como_aplicar:"España tiene lista de espera de meses en salud mental pública. Diferenciarse por especialidad y precio accesible es la clave.", riesgos:["Necesitas psicólogos colegiados","Competencia de apps internacionales","Retención si el paciente prefiere presencial"], pasos:["Montar plataforma con Calendly + Stripe + Zoom","Reclutar 5-10 psicólogos autónomos","Nicho inicial: ansiedad laboral B2B","Certificar cumplimiento LOPD/RGPD"] },
@@ -707,10 +764,8 @@ export default function App() {
         {(activeTab === "trends" || activeTab === "favorites") && (
           <>
             {activeTab === "trends" && <MarketChart sector={sector} />}
-
-              })}
-            {activeTab === "trends" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+{activeTab === "trends" && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px", marginTop: "24px" }}>
               {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
                 const categoria = STATIC_MARKET[categoriaKey];
                 return (categoria.datos || []).map((item, index) => (
@@ -718,18 +773,16 @@ export default function App() {
                     key={`${categoriaKey}-${index}`}
                     trend={{
                       nombre: item.nombre,
-                      emoji: index % 2 === 0 ? "🚀" : "💡",
-                      isPremium: true,
+                      emoji: "💡",
+                      isPremium: true, 
                       inversion: "Bajo Coste (<300€)",
                       tiempo: "1-3 días",
-                      herramientas: "No-Code / Redes",
-                      estrategia: `Plan para España: Valida ${item.nombre} montando una landing page. El mercado en USA ya factura ${item.mercadoUSA}M, mientras que en España el volumen actual es de ${item.mercadoES}M con un crecimiento del ${item.crecimiento}%.`
+                      herramientas: "No-Code / Redes Sociales",
+                      estrategia: `Plan de acción para España: Valida ${item.nombre} montando una landing page sencilla. El mercado en USA ya factura ${item.mercadoUSA}M, mientras que en España el volumen actual es de ${item.mercadoES}M con un crecimiento del ${item.crecimiento}%.`
                     }}
                   />
                 ));
               })}
-            </div>
-          )}
             </div>
           )}
             {activeTab === "favorites" && favorites.length === 0 && (
