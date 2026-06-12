@@ -1,32 +1,36 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
 const SECRET_TOKEN        = "ts_unlock_2025";
 const FREE_TOKENS         = 2;
-const FREE_AI_QUESTIONS   = 1;
-const API_URL             = "/api/chat"; // Vercel Function proxy
 // ─────────────────────────────────────────────────────────────────────────────
 
 const C = {
-  bg:         "#0d0d0f",
-  surface:    "#161618",
-  card:       "#1c1c1f",
-  border:     "#2a2a2e",
+  bg:         "#0a0a0c",
+  surface:    "#111114",
+  card:       "#18181c",
+  cardHover:  "#1e1e23",
+  border:     "#252529",
   borderGold: "#c9a84c",
   gold:       "#c9a84c",
-  goldLight:  "#f0d080",
-  goldBg:     "rgba(201,168,76,0.08)",
+  goldLight:  "#e8c96a",
+  goldBg:     "rgba(201,168,76,0.07)",
+  goldBorder: "rgba(201,168,76,0.2)",
   text:       "#f0ede8",
-  textMuted:  "#8a8680",
-  textDim:    "#5a5855",
+  textMuted:  "#7a7673",
+  textDim:    "#4a4845",
   green:      "#4ade80",
-  greenBg:    "rgba(74,222,128,0.1)",
+  greenBg:    "rgba(74,222,128,0.08)",
+  greenBorder:"rgba(74,222,128,0.2)",
   red:        "#f87171",
-  redBg:      "rgba(248,113,113,0.1)",
+  redBg:      "rgba(248,113,113,0.08)",
   amber:      "#fbbf24",
   indigo:     "#818cf8",
+  indigoBg:   "rgba(129,140,248,0.08)",
+  indigoBorder:"rgba(129,140,248,0.2)",
+  pink:       "#f472b6",
 };
 
 const TRENDS = [
@@ -58,82 +62,248 @@ const TRENDS = [
 
 const SECTORES    = ["Todos","Food & Drink","Fitness","Salud","Tech","Retail","Servicios","Educación","Sostenibilidad"];
 const SECTOR_ICON = { "Todos":"🌎","Food & Drink":"🍽️","Fitness":"💪","Salud":"🩺","Tech":"💻","Retail":"🛍️","Servicios":"🤝","Educación":"🎓","Sostenibilidad":"🌱" };
-const POT_STYLE   = { Alta:{ bg:"rgba(74,222,128,0.12)", color:"#4ade80" }, Media:{ bg:"rgba(251,191,36,0.12)", color:"#fbbf24" }, Baja:{ bg:"rgba(248,113,113,0.12)", color:"#f87171" } };
-const DIF_STYLE   = { "Fácil":{ bg:"rgba(129,140,248,0.12)", color:"#818cf8" }, Moderada:{ bg:"rgba(251,191,36,0.12)", color:"#fbbf24" }, "Difícil":{ bg:"rgba(248,113,113,0.12)", color:"#f87171" } };
+const POT_STYLE   = { Alta:{ bg:"rgba(74,222,128,0.12)", color:"#4ade80", border:"rgba(74,222,128,0.25)" }, Media:{ bg:"rgba(251,191,36,0.12)", color:"#fbbf24", border:"rgba(251,191,36,0.25)" }, Baja:{ bg:"rgba(248,113,113,0.12)", color:"#f87171", border:"rgba(248,113,113,0.25)" } };
+const DIF_STYLE   = { "Fácil":{ bg:"rgba(129,140,248,0.12)", color:"#818cf8", border:"rgba(129,140,248,0.25)" }, Moderada:{ bg:"rgba(251,191,36,0.12)", color:"#fbbf24", border:"rgba(251,191,36,0.25)" }, "Difícil":{ bg:"rgba(248,113,113,0.12)", color:"#f87171", border:"rgba(248,113,113,0.25)" } };
 
-const Pill = ({ label, map }) => {
-  const s = map[label] || { bg:"rgba(255,255,255,0.05)", color:"#8a8680" };
-  return <span style={{ background:s.bg, color:s.color, fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:99, display:"inline-block" }}>{label}</span>;
+// ─── DATOS ESTÁTICOS: NOTICIAS ──────────────────────────────────────────────
+// Datos fijos de ejemplo. Sustituye por fuentes propias / actualízalos manualmente.
+const STATIC_NEWS = [
+  { titulo:"El delivery saludable crece un 22% en España", resumen:"Las apps de meal prep y dark kitchens ganan terreno frente a la comida rápida tradicional.", sector:"Food & Drink", impacto:"Alto", tag:"Tendencia" },
+  { titulo:"Inversión en salud mental digital se duplica", resumen:"Fondos europeos apuestan por plataformas de terapia online ante la saturación pública.", sector:"Salud", impacto:"Alto", tag:"Inversión" },
+  { titulo:"Nueva normativa de residuos para hostelería", resumen:"Bares y restaurantes deberán separar aceite y orgánico bajo nuevas reglas autonómicas.", sector:"Sostenibilidad", impacto:"Medio", tag:"Regulación" },
+  { titulo:"El padel sigue rompiendo récords de jugadores", resumen:"España supera los 6 millones de jugadores activos, con demanda de instalaciones premium.", sector:"Fitness", impacto:"Alto", tag:"Tendencia" },
+  { titulo:"Autónomos buscan alternativas digitales a gestorías", resumen:"Crece el interés por apps de facturación e IVA automatizado entre freelancers.", sector:"Tech", impacto:"Medio", tag:"Startup" },
+  { titulo:"El alquiler vacacional profesional gana cuota", resumen:"Más propietarios externalizan la gestión de pisos turísticos a empresas especializadas.", sector:"Servicios", impacto:"Medio", tag:"Tendencia" },
+  { titulo:"Auge de la segunda mano física con garantía", resumen:"Tiendas curadas de ropa y electrónica de segunda mano se multiplican en grandes ciudades.", sector:"Retail", impacto:"Medio", tag:"Tendencia" },
+  { titulo:"Formación en energías renovables, gran demanda", resumen:"Faltan miles de instaladores cualificados para cumplir los objetivos de renovables 2030.", sector:"Educación", impacto:"Alto", tag:"Oportunidad" },
+];
+
+// ─── DATOS ESTÁTICOS: RADAR DE MERCADO ───────────────────────────────────────
+// Datos fijos de ejemplo (en miles de millones, EE.UU. en $ y España en €).
+// Sustituye por cifras reales / actualízalas manualmente cuando lo necesites.
+const STATIC_MARKET = {
+  "Todos": {
+    insight: "El mercado de bienestar y servicios personales en EE.UU. es 6-10x mayor que en España.",
+    datos: [
+      { nombre:"Meal Prep",       mercadoUSA:65,  mercadoES:1.2, crecimiento:40 },
+      { nombre:"Salud Mental",    mercadoUSA:120, mercadoES:2.5, crecimiento:25 },
+      { nombre:"Fitness Boutique",mercadoUSA:35,  mercadoES:1.0, crecimiento:18 },
+      { nombre:"Alquiler Vac.",   mercadoUSA:90,  mercadoES:8.5, crecimiento:15 },
+      { nombre:"Segunda Mano",    mercadoUSA:55,  mercadoES:3.0, crecimiento:22 },
+    ],
+  },
+  "Food & Drink": {
+    insight: "Las dark kitchens y bares de zumo en frío mueven decenas de miles de millones en EE.UU.",
+    datos: [
+      { nombre:"Dark Kitchens",   mercadoUSA:45, mercadoES:0.8, crecimiento:35 },
+      { nombre:"Zumos en Frío",   mercadoUSA:20, mercadoES:0.3, crecimiento:20 },
+      { nombre:"Meal Prep",       mercadoUSA:65, mercadoES:1.2, crecimiento:40 },
+      { nombre:"Cajas Gourmet",   mercadoUSA:12, mercadoES:0.4, crecimiento:15 },
+      { nombre:"Comida Vegana",   mercadoUSA:30, mercadoES:0.6, crecimiento:18 },
+    ],
+  },
+  "Fitness": {
+    insight: "Los estudios boutique y la recuperación deportiva crecen con fuerza en mercados maduros.",
+    datos: [
+      { nombre:"Estudios Boutique",mercadoUSA:35, mercadoES:1.0, crecimiento:18 },
+      { nombre:"Crioterapia",      mercadoUSA:8,  mercadoES:0.1, crecimiento:28 },
+      { nombre:"Padel Indoor",     mercadoUSA:5,  mercadoES:0.7, crecimiento:30 },
+      { nombre:"Apps Fitness",     mercadoUSA:25, mercadoES:0.5, crecimiento:22 },
+      { nombre:"Wellness Clubs",   mercadoUSA:40, mercadoES:1.5, crecimiento:16 },
+    ],
+  },
+  "Salud": {
+    insight: "La telesalud mental en EE.UU. multiplica por 50x el tamaño del mercado español.",
+    datos: [
+      { nombre:"Terapia Online",  mercadoUSA:120, mercadoES:2.5, crecimiento:25 },
+      { nombre:"Concierge Mayores",mercadoUSA:30, mercadoES:0.5, crecimiento:20 },
+      { nombre:"Telemedicina",    mercadoUSA:85,  mercadoES:3.0, crecimiento:18 },
+      { nombre:"Apps Bienestar",  mercadoUSA:22,  mercadoES:0.6, crecimiento:24 },
+      { nombre:"Nutrición Online",mercadoUSA:15,  mercadoES:0.4, crecimiento:19 },
+    ],
+  },
+  "Tech": {
+    insight: "El SaaS vertical para PYMEs y autónomos en España aún está muy poco explotado.",
+    datos: [
+      { nombre:"SaaS Clínicas",   mercadoUSA:18, mercadoES:0.3, crecimiento:22 },
+      { nombre:"IA Marketing",    mercadoUSA:40, mercadoES:0.8, crecimiento:35 },
+      { nombre:"Fintech Autón.",  mercadoUSA:25, mercadoES:0.6, crecimiento:20 },
+      { nombre:"Software Reservas",mercadoUSA:12,mercadoES:0.3, crecimiento:17 },
+      { nombre:"Herramientas IA", mercadoUSA:55, mercadoES:1.2, crecimiento:40 },
+    ],
+  },
+  "Retail": {
+    insight: "El live commerce y la moda circular crecen mucho más rápido en EE.UU. y China.",
+    datos: [
+      { nombre:"Live Commerce",   mercadoUSA:50, mercadoES:0.3, crecimiento:30 },
+      { nombre:"Renting de Ropa", mercadoUSA:7,  mercadoES:0.1, crecimiento:14 },
+      { nombre:"Segunda Mano",    mercadoUSA:55, mercadoES:3.0, crecimiento:22 },
+      { nombre:"Cajas Suscripción",mercadoUSA:15,mercadoES:0.4, crecimiento:16 },
+      { nombre:"E-commerce Nicho",mercadoUSA:35, mercadoES:1.5, crecimiento:18 },
+    ],
+  },
+  "Servicios": {
+    insight: "La gestión profesional de propiedades y servicios para mayores tiene amplio margen de crecimiento.",
+    datos: [
+      { nombre:"Alquiler Vac.",   mercadoUSA:90, mercadoES:8.5, crecimiento:15 },
+      { nombre:"Concierge Mayores",mercadoUSA:30,mercadoES:0.5, crecimiento:20 },
+      { nombre:"Lavanderías Premium",mercadoUSA:10,mercadoES:0.2, crecimiento:12 },
+      { nombre:"Fotografía Inmob.",mercadoUSA:6, mercadoES:0.15,crecimiento:14 },
+      { nombre:"Limpieza On-Demand",mercadoUSA:20,mercadoES:0.6, crecimiento:17 },
+    ],
+  },
+  "Educación": {
+    insight: "La educación financiera y la formación técnica especializada tienen demanda creciente.",
+    datos: [
+      { nombre:"Finanzas Personales",mercadoUSA:18,mercadoES:0.2,crecimiento:25 },
+      { nombre:"Tutorías IA+Humano",mercadoUSA:30, mercadoES:0.6,crecimiento:22 },
+      { nombre:"Formación Renovables",mercadoUSA:14,mercadoES:0.3,crecimiento:28 },
+      { nombre:"E-learning B2B",  mercadoUSA:45,  mercadoES:1.0, crecimiento:20 },
+      { nombre:"Certificaciones", mercadoUSA:22,  mercadoES:0.4, crecimiento:17 },
+    ],
+  },
+  "Sostenibilidad": {
+    insight: "La energía solar comunitaria y la reparación de electrónica responden a una demanda regulatoria creciente.",
+    datos: [
+      { nombre:"Solar Comunitaria",mercadoUSA:25,mercadoES:0.4, crecimiento:30 },
+      { nombre:"Reparación Electr.",mercadoUSA:10,mercadoES:0.2,crecimiento:18 },
+      { nombre:"Gestión Residuos", mercadoUSA:30, mercadoES:0.5,crecimiento:16 },
+      { nombre:"Economía Circular",mercadoUSA:40, mercadoES:1.0,crecimiento:20 },
+      { nombre:"Energía Limpia",   mercadoUSA:60, mercadoES:2.5,crecimiento:22 },
+    ],
+  },
 };
 
-// ── LLAMADA A LA IA (via proxy Vercel) ────────────────────────────────────────
-async function callClaude(system, messages, maxTokens = 1000) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      system,
-      messages,
-    }),
-  });
-  const data = await res.json();
-  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
-}
+const Pill = ({ label, map }) => {
+  const s = map[label] || { bg:"rgba(255,255,255,0.05)", color:"#8a8680", border:"rgba(255,255,255,0.1)" };
+  return (
+    <span style={{ background:s.bg, color:s.color, border:`1px solid ${s.border}`, fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:99, display:"inline-block", letterSpacing:"0.02em" }}>
+      {label}
+    </span>
+  );
+};
 
-// ── MARKET CHART ──────────────────────────────────────────────────────────────
-function MarketChart({ sector }) {
-  const [chartData, setChartData] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
-  const [insight, setInsight]     = useState("");
+// ─── NOTICIAS (datos estáticos) ───────────────────────────────────────────────
+function NewsSection({ sector }) {
+  const news = useMemo(() => {
+    return sector === "Todos" ? STATIC_NEWS : STATIC_NEWS.filter(n => n.sector === sector);
+  }, [sector]);
 
-  const fetchMarketData = async () => {
-    setLoading(true);
-    setError(null);
-    setChartData(null);
-    setInsight("");
-    try {
-      const system = `Eres un analista de mercado experto. Devuelve SOLO un objeto JSON válido, sin texto adicional, sin markdown, sin explicaciones.`;
-      const prompt = `Dame datos de mercado para el sector "${sector === "Todos" ? "los principales sectores de negocio" : sector}" en EE.UU. que aún no están desarrollados en España.
-
-Devuelve exactamente este JSON:
-{
-  "titulo": "string corto descriptivo",
-  "insight": "1 frase clave sobre la oportunidad (máximo 120 caracteres)",
-  "datos": [
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number },
-    { "nombre": "string (máx 18 chars)", "mercadoUSA": number, "mercadoES": number, "crecimiento": number }
-  ]
-}
-
-Donde:
-- nombre: subsector o empresa referente
-- mercadoUSA: tamaño de mercado en EE.UU. en miles de millones de dólares (número)
-- mercadoES: tamaño estimado en España en miles de millones de euros (número)  
-- crecimiento: crecimiento anual en EE.UU. en % (número entero)
-
-Usa datos reales aproximados de tu conocimiento. Solo el JSON, nada más.`;
-
-      const text = await callClaude(system, [{ role:"user", content:prompt }], 800);
-
-      // Limpiar posibles markdown fences
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      setChartData(parsed.datos);
-      setInsight(parsed.insight);
-    } catch (e) {
-      setError("No se pudo cargar el análisis. Inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
-    }
+  const IMP = {
+    Alto:  { color:"#4ade80", bg:"rgba(74,222,128,0.1)",   border:"rgba(74,222,128,0.2)"  },
+    Medio: { color:"#fbbf24", bg:"rgba(251,191,36,0.1)",   border:"rgba(251,191,36,0.2)"  },
+    Bajo:  { color:"#818cf8", bg:"rgba(129,140,248,0.1)",  border:"rgba(129,140,248,0.2)" },
   };
 
-  useEffect(() => { fetchMarketData(); }, [sector]);
+  return (
+    <div style={{ marginBottom:24 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+        <div style={{ width:32, height:32, background:"rgba(244,114,182,0.12)", border:"1px solid rgba(244,114,182,0.2)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>📰</div>
+        <div>
+          <p style={{ fontSize:9, fontWeight:800, color:C.pink, textTransform:"uppercase", letterSpacing:"0.14em", margin:0 }}>Señales del mercado</p>
+          <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:0 }}>Noticias & Tendencias</p>
+        </div>
+      </div>
+
+      {news.length === 0 && (
+        <div style={{ background:C.card, border:`1px dashed ${C.border}`, borderRadius:16, padding:"28px 20px", textAlign:"center" }}>
+          <p style={{ fontSize:28, margin:"0 0 8px" }}>📰</p>
+          <p style={{ fontSize:14, color:C.textMuted, margin:0 }}>No hay noticias para este sector todavía</p>
+        </div>
+      )}
+
+      {news.length > 0 && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(270px, 1fr))", gap:10 }}>
+          {news.map((n, i) => {
+            const imp = IMP[n.impacto] || IMP.Medio;
+            return (
+              <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, ${imp.color}44, transparent)` }} />
+                <div style={{ display:"flex", gap:8, marginBottom:8, alignItems:"flex-start" }}>
+                  <span style={{ background:imp.bg, color:imp.color, border:`1px solid ${imp.border}`, fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:99, whiteSpace:"nowrap", letterSpacing:"0.04em" }}>{n.impacto}</span>
+                  <span style={{ background:"rgba(255,255,255,0.04)", color:C.textMuted, fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:99, border:`1px solid ${C.border}` }}>{n.tag}</span>
+                </div>
+                <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:"0 0 6px", lineHeight:1.4 }}>{n.titulo}</p>
+                <p style={{ fontSize:12, color:C.textMuted, margin:0, lineHeight:1.6 }}>{n.resumen}</p>
+                <p style={{ fontSize:10, color:C.textDim, margin:"10px 0 0", fontWeight:600 }}>{n.sector}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── COMPARADOR (sin IA) ───────────────────────────────────────────────────────
+function CompareModal({ trends, onClose }) {
+  const [a, setA] = useState(trends[0]?.id || null);
+  const [b, setB] = useState(trends[1]?.id || null);
+
+  const tA = trends.find(t => t.id === a);
+  const tB = trends.find(t => t.id === b);
+
+  const Field = ({ label, val }) => (
+    <div style={{ padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+      <p style={{ fontSize:10, fontWeight:800, color:C.textDim, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 4px" }}>{label}</p>
+      <p style={{ fontSize:13, color:C.text, margin:0, lineHeight:1.5 }}>{val}</p>
+    </div>
+  );
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:55, background:"rgba(0,0,0,0.82)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:20, width:"100%", maxWidth:720, maxHeight:"90vh", overflowY:"auto", padding:"24px 20px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <div>
+            <p style={{ fontSize:9, fontWeight:800, color:C.indigo, textTransform:"uppercase", letterSpacing:"0.14em", margin:0 }}>Comparador</p>
+            <h2 style={{ fontSize:18, fontWeight:800, color:C.text, margin:0 }}>⚖️ Comparador de oportunidades</h2>
+          </div>
+          <button onClick={onClose} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", cursor:"pointer", fontSize:13, color:C.textMuted }}>✕ Cerrar</button>
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+          {[{ label:"Oportunidad A", val:a, set:setA, color:C.gold }, { label:"Oportunidad B", val:b, set:setB, color:C.indigo }].map(({ label, val, set, color }) => (
+            <div key={label}>
+              <p style={{ fontSize:10, fontWeight:800, color, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 6px" }}>{label}</p>
+              <select value={val || ""} onChange={e => set(Number(e.target.value))}
+                style={{ width:"100%", background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", fontSize:13, color:C.text, cursor:"pointer" }}>
+                {trends.map(t => <option key={t.id} value={t.id}>{t.emoji} {t.nombre}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+
+        {tA && tB && (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:0 }}>
+            <div style={{ background:C.card, border:`1px solid ${C.borderGold}`, borderRadius:"14px 0 0 14px", padding:"14px 16px" }}>
+              <p style={{ fontSize:22, margin:"0 0 6px" }}>{tA.emoji}</p>
+              <p style={{ fontSize:13, fontWeight:800, color:C.text, margin:"0 0 10px", lineHeight:1.3 }}>{tA.nombre}</p>
+              <Field label="Sector" val={tA.sector} />
+              <Field label="Potencial" val={tA.potencial} />
+              <Field label="Dificultad" val={tA.dificultad} />
+              <Field label="Resumen" val={tA.resumen} />
+            </div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"0 12px", background:C.bg }}>
+              <div style={{ background:`linear-gradient(135deg, ${C.gold}, ${C.indigo})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", fontSize:18, fontWeight:900 }}>VS</div>
+            </div>
+            <div style={{ background:C.card, border:`1px solid ${C.indigoBorder}`, borderRadius:"0 14px 14px 0", padding:"14px 16px" }}>
+              <p style={{ fontSize:22, margin:"0 0 6px" }}>{tB.emoji}</p>
+              <p style={{ fontSize:13, fontWeight:800, color:C.text, margin:"0 0 10px", lineHeight:1.3 }}>{tB.nombre}</p>
+              <Field label="Sector" val={tB.sector} />
+              <Field label="Potencial" val={tB.potencial} />
+              <Field label="Dificultad" val={tB.dificultad} />
+              <Field label="Resumen" val={tB.resumen} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── MARKET CHART (datos estáticos) ───────────────────────────────────────────
+function MarketChart({ sector }) {
+  const data = STATIC_MARKET[sector] || STATIC_MARKET["Todos"];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -148,218 +318,94 @@ Usa datos reales aproximados de tu conocimiento. Solo el JSON, nada más.`;
   };
 
   return (
-    <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 16px", marginBottom:20 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-        <div>
-          <p style={{ fontSize:9, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>📊 Radar de Mercado — EE.UU. vs España</p>
-          <p style={{ fontSize:11, color:C.textMuted, margin:0 }}>Capital que mueve el sector y su brecha con España</p>
-        </div>
-        <button onClick={fetchMarketData} disabled={loading}
-          style={{ background:C.goldBg, border:`1px solid rgba(201,168,76,0.25)`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:11, color:C.gold, fontWeight:700, opacity:loading?0.5:1 }}>
-          {loading ? "..." : "↻ Actualizar"}
-        </button>
+    <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"18px 16px", marginBottom:20, position:"relative", overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, ${C.gold}55, transparent)` }} />
+      <div style={{ marginBottom:4 }}>
+        <p style={{ fontSize:9, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.14em", margin:"0 0 2px" }}>📊 Radar de Mercado — EE.UU. vs España</p>
+        <p style={{ fontSize:11, color:C.textMuted, margin:0 }}>Brecha de capital entre ambos mercados</p>
       </div>
 
-      {insight && !loading && (
-        <div style={{ background:"rgba(129,140,248,0.08)", border:"1px solid rgba(129,140,248,0.2)", borderRadius:8, padding:"8px 12px", marginBottom:14, marginTop:10 }}>
-          <p style={{ fontSize:12, color:C.indigo, margin:0, fontWeight:500 }}>✦ {insight}</p>
-        </div>
-      )}
-
-      {loading && (
-        <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:10 }}>
-          <div style={{ width:32, height:32, border:`3px solid ${C.border}`, borderTop:`3px solid ${C.gold}`, borderRadius:"50%", animation:"spin 1s linear infinite" }} />
-          <p style={{ fontSize:12, color:C.textMuted, margin:0 }}>La IA está analizando el mercado...</p>
-        </div>
-      )}
-
-      {error && !loading && (
-        <div style={{ height:120, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <p style={{ fontSize:13, color:C.red, margin:0 }}>{error}</p>
-        </div>
-      )}
-
-      {chartData && !loading && (
-        <>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top:10, right:10, left:-10, bottom:0 }} barGap={4}>
-              <XAxis dataKey="nombre" tick={{ fill:C.textMuted, fontSize:10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill:C.textDim, fontSize:10 }} axisLine={false} tickLine={false} unit="B" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="mercadoUSA" name="EE.UU." radius={[4,4,0,0]} maxBarSize={28}>
-                {chartData.map((_, i) => <Cell key={i} fill={C.gold} opacity={0.85} />)}
-              </Bar>
-              <Bar dataKey="mercadoES" name="España" radius={[4,4,0,0]} maxBarSize={28}>
-                {chartData.map((_, i) => <Cell key={i} fill={C.indigo} opacity={0.75} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display:"flex", gap:16, justifyContent:"center", marginTop:8 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-              <div style={{ width:10, height:10, borderRadius:2, background:C.gold }} />
-              <span style={{ fontSize:10, color:C.textMuted }}>EE.UU. (miles de millones $)</span>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-              <div style={{ width:10, height:10, borderRadius:2, background:C.indigo }} />
-              <span style={{ fontSize:10, color:C.textMuted }}>España (miles de millones €)</span>
-            </div>
-          </div>
-          <div style={{ display:"flex", gap:6, marginTop:12, overflowX:"auto" }}>
-            {chartData.map((d, i) => (
-              <div key={i} style={{ background:C.bg, borderRadius:8, padding:"6px 10px", textAlign:"center", flexShrink:0 }}>
-                <p style={{ fontSize:10, color:C.textMuted, margin:"0 0 2px" }}>{d.nombre}</p>
-                <p style={{ fontSize:13, fontWeight:800, color:C.green, margin:0 }}>+{d.crecimiento}%</p>
-                <p style={{ fontSize:9, color:C.textDim, margin:0 }}>crecimiento USA</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
-
-// ── AI CHAT ───────────────────────────────────────────────────────────────────
-function AIChat({ trend, isPro, aiQuestionsLeft, onUseAiQuestion, onPaywall }) {
-  const [input, setInput]       = useState("");
-  const [messages, setMessages] = useState([
-    { role:"assistant", content:`Hola, soy tu analista de mercado IA. Estoy especializado en **${trend.nombre}** y en cómo llevarlo a España. ¿Qué quieres saber?` }
-  ]);
-  const [loading, setLoading]   = useState(false);
-  const bottomRef               = useRef(null);
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages, loading]);
-
-  const canAsk = isPro || aiQuestionsLeft > 0;
-
-  const send = async () => {
-    if (!input.trim() || loading) return;
-    if (!canAsk) { onPaywall(); return; }
-
-    const userMsg = input.trim();
-    setInput("");
-    setMessages(prev => [...prev, { role:"user", content:userMsg }]);
-    if (!isPro) onUseAiQuestion();
-    setLoading(true);
-
-    try {
-      const system = `Eres un analista experto en tendencias de negocio entre EE.UU. y España. Analiza esta oportunidad:
-
-Nombre: ${trend.nombre} | Sector: ${trend.sector}
-Resumen: ${trend.resumen}
-Por qué funciona en EE.UU.: ${trend.por_que}
-Cómo aplicarlo en España: ${trend.como_aplicar}
-Riesgos: ${trend.riesgos.join(", ")}
-Primeros pasos: ${trend.pasos.join(", ")}
-
-Responde de forma concisa, práctica y directa. Máximo 3 párrafos. En español.`;
-
-      const history = messages.map(m => ({ role:m.role, content:m.content }));
-      history.push({ role:"user", content:userMsg });
-
-      const text = await callClaude(system, history);
-      setMessages(prev => [...prev, { role:"assistant", content: text || "No pude obtener respuesta. Inténtalo de nuevo." }]);
-    } catch {
-      setMessages(prev => [...prev, { role:"assistant", content:"Error de conexión. Inténtalo de nuevo." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ borderTop:`1px solid ${C.border}`, marginTop:20, paddingTop:20 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:16 }}>🤖</span>
-          <p style={{ fontSize:12, fontWeight:700, color:C.gold, margin:0, textTransform:"uppercase", letterSpacing:"0.08em" }}>Analista IA</p>
-        </div>
-        {!isPro && (
-          <span style={{ fontSize:11, color:aiQuestionsLeft > 0 ? C.amber : C.red, fontWeight:600 }}>
-            {aiQuestionsLeft > 0 ? `${aiQuestionsLeft} pregunta gratis` : "Sin preguntas gratuitas"}
-          </span>
-        )}
+      <div style={{ background:C.indigoBg, border:`1px solid ${C.indigoBorder}`, borderRadius:10, padding:"8px 14px", marginBottom:14, marginTop:12 }}>
+        <p style={{ fontSize:12, color:C.indigo, margin:0, fontWeight:600 }}>✦ {data.insight}</p>
       </div>
 
-      <div style={{ background:C.bg, borderRadius:12, padding:14, marginBottom:12, maxHeight:280, overflowY:"auto", display:"flex", flexDirection:"column", gap:10 }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ display:"flex", justifyContent:m.role==="user" ? "flex-end" : "flex-start" }}>
-            <div style={{
-              background: m.role==="user" ? `linear-gradient(135deg,${C.gold},${C.goldLight})` : C.card,
-              color: m.role==="user" ? "#0d0d0f" : C.text,
-              padding:"10px 14px", borderRadius:12, maxWidth:"85%", fontSize:13, lineHeight:1.6,
-              fontWeight: m.role==="user" ? 600 : 400,
-            }}>
-              {m.content}
-            </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data.datos} margin={{ top:10, right:10, left:-10, bottom:0 }} barGap={4}>
+          <XAxis dataKey="nombre" tick={{ fill:C.textMuted, fontSize:10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill:C.textDim, fontSize:10 }} axisLine={false} tickLine={false} unit="B" />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="mercadoUSA" name="EE.UU." radius={[4,4,0,0]} maxBarSize={28}>
+            {data.datos.map((_, i) => <Cell key={i} fill={C.gold} opacity={0.85} />)}
+          </Bar>
+          <Bar dataKey="mercadoES" name="España" radius={[4,4,0,0]} maxBarSize={28}>
+            {data.datos.map((_, i) => <Cell key={i} fill={C.indigo} opacity={0.75} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <div style={{ display:"flex", gap:16, justifyContent:"center", marginTop:6 }}>
+        {[{ color:C.gold, label:"EE.UU. (miles de millones $)" }, { color:C.indigo, label:"España (miles de millones €)" }].map(({ color, label }) => (
+          <div key={label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:8, height:8, borderRadius:2, background:color }} />
+            <span style={{ fontSize:10, color:C.textMuted }}>{label}</span>
           </div>
         ))}
-        {loading && (
-          <div style={{ display:"flex", justifyContent:"flex-start" }}>
-            <div style={{ background:C.card, padding:"10px 16px", borderRadius:12, color:C.textMuted, fontSize:13 }}>✦ Analizando...</div>
-          </div>
-        )}
-        <div ref={bottomRef} />
       </div>
-
-      {canAsk ? (
-        <div style={{ display:"flex", gap:8 }}>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==="Enter" && send()}
-            placeholder={isPro ? "Pregunta lo que quieras..." : "1 pregunta gratis — escribe aquí"}
-            style={{ flex:1, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.text, outline:"none" }} />
-          <button onClick={send} disabled={loading || !input.trim()}
-            style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, border:"none", borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:16, opacity:loading||!input.trim() ? 0.5 : 1 }}>
-            ➤
-          </button>
-        </div>
-      ) : (
-        <button onClick={onPaywall}
-          style={{ width:"100%", background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, border:"none", borderRadius:12, padding:14, fontSize:14, fontWeight:700, cursor:"pointer", color:"#0d0d0f" }}>
-          🔓 Hazte Pro para preguntas ilimitadas — 5€/mes
-        </button>
-      )}
+      <div style={{ display:"flex", gap:6, marginTop:12, overflowX:"auto" }}>
+        {data.datos.map((d, i) => (
+          <div key={i} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"6px 10px", textAlign:"center", flexShrink:0 }}>
+            <p style={{ fontSize:10, color:C.textMuted, margin:"0 0 2px" }}>{d.nombre}</p>
+            <p style={{ fontSize:13, fontWeight:800, color:C.green, margin:0 }}>+{d.crecimiento}%</p>
+            <p style={{ fontSize:9, color:C.textDim, margin:0 }}>crecimiento USA</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-// ── PAYWALL MODAL ─────────────────────────────────────────────────────────────
+// ─── PAYWALL ──────────────────────────────────────────────────────────────────
 function PaywallModal({ onClose }) {
   const successUrl = typeof window !== "undefined"
     ? `${window.location.origin}${window.location.pathname}?token=${SECRET_TOKEN}` : "";
   const url = `${STRIPE_PAYMENT_LINK}?success_url=${encodeURIComponent(successUrl)}`;
+  const features = [
+    "✦ 24 oportunidades de negocio completas",
+    "✦ Radar de mercado y noticias",
+    "✦ Comparador de oportunidades",
+    "✦ Cancela cuando quieras",
+  ];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:60, background:"rgba(0,0,0,0.8)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, border:`1px solid ${C.borderGold}`, borderRadius:24, padding:28, width:"100%", maxWidth:400, textAlign:"center", boxShadow:`0 0 60px rgba(201,168,76,0.15)` }}>
-        <div style={{ fontSize:52, marginBottom:8 }}>✦</div>
-        <h2 style={{ fontSize:22, fontWeight:800, color:C.gold, margin:"0 0 6px" }}>TrendSpain Pro</h2>
-        <p style={{ fontSize:14, color:C.textMuted, lineHeight:1.6, margin:"0 0 4px" }}>Accede a todo sin límites</p>
-        <p style={{ fontSize:32, fontWeight:800, color:C.text, margin:"14px 0" }}>5€<span style={{ fontSize:14, fontWeight:400, color:C.textMuted }}>/mes</span></p>
-        <div style={{ background:C.card, borderRadius:14, padding:16, marginBottom:20, textAlign:"left" }}>
-          {["✦ 24 oportunidades de negocio completas","✦ Análisis profundo por qué funciona en EE.UU.","✦ Plan paso a paso adaptado a España","✦ Chat con IA analista ilimitado","✦ Radar de mercado con IA en tiempo real","✦ Cancela cuando quieras"].map((item, i) => (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:60, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, border:`1px solid ${C.borderGold}`, borderRadius:24, padding:28, width:"100%", maxWidth:400, textAlign:"center" }}>
+        <div style={{ fontSize:48, marginBottom:8 }}>✦</div>
+        <h2 style={{ fontSize:22, fontWeight:800, color:C.gold, margin:"0 0 4px" }}>TrendSpain Pro</h2>
+        <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.6, margin:"0 0 4px" }}>Todo el poder del radar, sin límites</p>
+        <p style={{ fontSize:34, fontWeight:900, color:C.text, margin:"14px 0" }}>5€<span style={{ fontSize:14, fontWeight:400, color:C.textMuted }}>/mes</span></p>
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:16, marginBottom:20, textAlign:"left" }}>
+          {features.map((item, i) => (
             <p key={i} style={{ fontSize:13, color:C.text, margin:"0 0 8px", fontWeight:500 }}>{item}</p>
           ))}
         </div>
         <a href={url} target="_blank" rel="noopener noreferrer"
-          style={{ display:"block", background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0d0d0f", padding:16, borderRadius:14, fontSize:16, fontWeight:800, textDecoration:"none", marginBottom:10 }}>
+          style={{ display:"block", background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0a0a0c", padding:16, borderRadius:14, fontSize:16, fontWeight:800, textDecoration:"none", marginBottom:8 }}>
           Suscribirme — 5€/mes →
         </a>
-        <p style={{ fontSize:11, color:C.textDim, margin:"0 0 10px" }}>Pago seguro con Stripe · Cancela cuando quieras</p>
+        <p style={{ fontSize:11, color:C.textDim, margin:"0 0 10px" }}>Pago seguro · Cancela cuando quieras</p>
         <button onClick={onClose} style={{ background:"none", border:"none", color:C.textMuted, fontSize:13, cursor:"pointer" }}>Ahora no</button>
       </div>
     </div>
   );
 }
 
-// ── SUCCESS MODAL ─────────────────────────────────────────────────────────────
+// ─── SUCCESS MODAL ────────────────────────────────────────────────────────────
 function SuccessModal({ onClose }) {
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:70, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+    <div style={{ position:"fixed", inset:0, zIndex:70, background:"rgba(0,0,0,0.9)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div style={{ background:C.surface, border:`1px solid ${C.borderGold}`, borderRadius:24, padding:32, width:"100%", maxWidth:360, textAlign:"center" }}>
-        <div style={{ fontSize:56, marginBottom:12 }}>🎉</div>
+        <div style={{ fontSize:52, marginBottom:12 }}>🎉</div>
         <h2 style={{ fontSize:22, fontWeight:800, color:C.gold, margin:"0 0 8px" }}>¡Bienvenido a Pro!</h2>
-        <p style={{ fontSize:14, color:C.textMuted, lineHeight:1.6, margin:"0 0 20px" }}>Ya tienes acceso completo a las 24 oportunidades, el chat IA y el radar de mercado.</p>
-        <button onClick={onClose} style={{ width:"100%", background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0d0d0f", border:"none", borderRadius:14, padding:16, fontSize:16, fontWeight:800, cursor:"pointer" }}>
+        <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.6, margin:"0 0 20px" }}>Ya tienes acceso completo al radar, noticias y comparador.</p>
+        <button onClick={onClose} style={{ width:"100%", background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0a0a0c", border:"none", borderRadius:14, padding:16, fontSize:16, fontWeight:800, cursor:"pointer" }}>
           Explorar ahora →
         </button>
       </div>
@@ -367,89 +413,93 @@ function SuccessModal({ onClose }) {
   );
 }
 
-// ── TREND MODAL ───────────────────────────────────────────────────────────────
-function TrendModal({ t, onClose, isPro, aiQuestionsLeft, onUseAiQuestion, onPaywall }) {
+// ─── TREND MODAL ──────────────────────────────────────────────────────────────
+function TrendModal({ t, onClose, isFavorite, onToggleFavorite }) {
   if (!t) return null;
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:50, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, width:"100%", maxWidth:600, borderRadius:"20px 20px 0 0", padding:"20px 20px 40px", overflowY:"auto", maxHeight:"92vh", border:`1px solid ${C.border}`, borderBottom:"none" }}>
-        <div style={{ width:36, height:4, background:C.border, borderRadius:99, margin:"0 auto 20px" }} />
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:50, background:"rgba(0,0,0,0.8)", display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, width:"100%", maxWidth:620, borderRadius:"22px 22px 0 0", padding:"20px 20px 40px", overflowY:"auto", maxHeight:"92vh", border:`1px solid ${C.border}`, borderBottom:"none" }}>
+        <div style={{ width:32, height:3, background:C.border, borderRadius:99, margin:"0 auto 22px" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
           <div style={{ flex:1 }}>
-            <p style={{ fontSize:10, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 4px" }}>{t.sector}</p>
+            <p style={{ fontSize:9, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.14em", margin:"0 0 4px" }}>{t.sector}</p>
             <h2 style={{ fontSize:20, fontWeight:800, color:C.text, margin:0, lineHeight:1.2 }}>{t.emoji} {t.nombre}</h2>
           </div>
-          <button onClick={onClose} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:14, color:C.textMuted, marginLeft:10 }}>✕</button>
+          <div style={{ display:"flex", gap:8, marginLeft:10 }}>
+            <button onClick={() => onToggleFavorite(t.id)}
+              style={{ background: isFavorite ? "rgba(248,113,113,0.15)" : C.card, border:`1px solid ${isFavorite ? "rgba(248,113,113,0.3)" : C.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:16, transition:"all 0.15s" }}
+              title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}>
+              {isFavorite ? "❤️" : "🤍"}
+            </button>
+            <button onClick={onClose} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:13, color:C.textMuted }}>✕</button>
+          </div>
         </div>
+
         <div style={{ display:"flex", gap:6, marginBottom:16 }}>
           <Pill label={t.potencial} map={POT_STYLE} />
           <Pill label={t.dificultad} map={DIF_STYLE} />
         </div>
-        <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.7, marginBottom:18 }}>{t.resumen}</p>
-        {[{ title:"🇺🇸 Por qué funciona en EE.UU.", content:t.por_que }, { title:"🇪🇸 Cómo aplicarlo en España", content:t.como_aplicar }].map(({ title, content }) => (
-          <div key={title} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:16, marginBottom:12 }}>
-            <p style={{ fontSize:10, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 8px" }}>{title}</p>
-            <p style={{ fontSize:13, color:C.text, lineHeight:1.7, margin:0 }}>{content}</p>
+
+        <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.75, marginBottom:18 }}>{t.resumen}</p>
+
+        {[
+          { title:"🇺🇸 Por qué funciona en EE.UU.", content:t.por_que, border:C.goldBorder, bg:C.goldBg, color:C.gold },
+          { title:"🇪🇸 Cómo aplicarlo en España",  content:t.como_aplicar, border:C.indigoBorder, bg:C.indigoBg, color:C.indigo },
+        ].map(({ title, content, border, bg, color }) => (
+          <div key={title} style={{ background:bg, border:`1px solid ${border}`, borderRadius:14, padding:16, marginBottom:12 }}>
+            <p style={{ fontSize:9, fontWeight:800, color, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 8px" }}>{title}</p>
+            <p style={{ fontSize:13, color:C.text, lineHeight:1.75, margin:0 }}>{content}</p>
           </div>
         ))}
+
         <div style={{ marginBottom:14 }}>
-          <p style={{ fontSize:10, fontWeight:700, color:C.red, textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 10px" }}>⚠ Riesgos</p>
+          <p style={{ fontSize:9, fontWeight:800, color:C.red, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 10px" }}>⚠ Riesgos</p>
           {t.riesgos.map((r, i) => (
-            <div key={i} style={{ display:"flex", gap:10, marginBottom:7 }}>
-              <span style={{ color:C.red, fontSize:12, marginTop:2 }}>✕</span>
-              <p style={{ fontSize:13, color:C.textMuted, margin:0, lineHeight:1.5 }}>{r}</p>
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}>
+              <span style={{ color:C.red, fontSize:11, marginTop:3, flexShrink:0 }}>✕</span>
+              <p style={{ fontSize:13, color:C.textMuted, margin:0, lineHeight:1.6 }}>{r}</p>
             </div>
           ))}
         </div>
-        <div style={{ background:C.goldBg, border:`1px solid rgba(201,168,76,0.2)`, borderRadius:12, padding:16, marginBottom:4 }}>
-          <p style={{ fontSize:10, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 10px" }}>✦ Primeros pasos</p>
+
+        <div style={{ background:C.goldBg, border:`1px solid ${C.goldBorder}`, borderRadius:14, padding:16, marginBottom:4 }}>
+          <p style={{ fontSize:9, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 12px" }}>✦ Primeros pasos</p>
           {t.pasos.map((p, i) => (
-            <div key={i} style={{ display:"flex", gap:10, marginBottom:9 }}>
-              <span style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0d0d0f", fontWeight:800, fontSize:11, width:22, height:22, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i+1}</span>
-              <p style={{ fontSize:13, color:C.text, margin:0, lineHeight:1.5 }}>{p}</p>
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start" }}>
+              <span style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0a0a0c", fontWeight:900, fontSize:10, width:22, height:22, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>{i+1}</span>
+              <p style={{ fontSize:13, color:C.text, margin:0, lineHeight:1.6 }}>{p}</p>
             </div>
           ))}
         </div>
-        <AIChat trend={t} isPro={isPro} aiQuestionsLeft={aiQuestionsLeft} onUseAiQuestion={onUseAiQuestion} onPaywall={onPaywall} />
       </div>
     </div>
   );
 }
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [sector, setSector]         = useState("Todos");
-  const [query, setQuery]           = useState("");
-  const [selected, setSelected]     = useState(null);
+  const [sector, setSector]           = useState("Todos");
+  const [query, setQuery]             = useState("");
+  const [selected, setSelected]       = useState(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [isPro, setIsPro]           = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [isPro, setIsPro]             = useState(false);
+  const [activeTab, setActiveTab]     = useState("trends"); // "trends" | "news" | "favorites"
+  const [favorites, setFavorites]     = useState(() => {
+    try { const s = sessionStorage.getItem("ts_favorites"); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
   const [tokensLeft, setTokensLeft] = useState(() => {
     try { const s = sessionStorage.getItem("ts_tokens_left"); return s !== null ? parseInt(s) : FREE_TOKENS; } catch { return FREE_TOKENS; }
   });
-  const [aiQuestionsLeft, setAiQuestionsLeft] = useState(() => {
-    try { const s = sessionStorage.getItem("ts_ai_left"); return s !== null ? parseInt(s) : FREE_AI_QUESTIONS; } catch { return FREE_AI_QUESTIONS; }
-  });
-
-  useEffect(() => {
-    const params     = new URLSearchParams(window.location.search);
-    const urlToken   = params.get("token");
-    const savedToken = sessionStorage.getItem("ts_pro_token");
-    if (urlToken === SECRET_TOKEN || savedToken === SECRET_TOKEN) {
-      setIsPro(true);
-      if (urlToken === SECRET_TOKEN) {
-        sessionStorage.setItem("ts_pro_token", SECRET_TOKEN);
-        setShowSuccess(true);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-    }
-  }, []);
 
   const filtered = useMemo(() => TRENDS.filter(t => {
     const ms = sector === "Todos" || t.sector === sector;
     const mq = !query || t.nombre.toLowerCase().includes(query.toLowerCase()) || t.resumen.toLowerCase().includes(query.toLowerCase());
     return ms && mq;
   }), [sector, query]);
+
+  const favoriteTrends = useMemo(() => TRENDS.filter(t => favorites.includes(t.id)), [favorites]);
 
   const handleCard = (t) => {
     if (isPro) { setSelected(t); return; }
@@ -460,112 +510,189 @@ export default function App() {
     setSelected(t);
   };
 
-  const handleUseAiQuestion = () => {
-    const n = Math.max(0, aiQuestionsLeft - 1);
-    setAiQuestionsLeft(n);
-    try { sessionStorage.setItem("ts_ai_left", n); } catch {}
+  const toggleFavorite = (id) => {
+    const next = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
+    setFavorites(next);
+    try { sessionStorage.setItem("ts_favorites", JSON.stringify(next)); } catch {}
   };
 
-  return (
-    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"system-ui,-apple-system,sans-serif", color:C.text }}>
+  // Activación de Pro vía token en URL/sessionStorage
+  useState(() => {
+    try {
+      const params     = new URLSearchParams(window.location.search);
+      const urlToken   = params.get("token");
+      const savedToken = sessionStorage.getItem("ts_pro_token");
+      if (urlToken === SECRET_TOKEN || savedToken === SECRET_TOKEN) {
+        setIsPro(true);
+        if (urlToken === SECRET_TOKEN) {
+          sessionStorage.setItem("ts_pro_token", SECRET_TOKEN);
+          setShowSuccess(true);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    } catch {}
+  });
 
-      {/* HEADER */}
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"18px 16px 0", position:"sticky", top:0, zIndex:40 }}>
-        <div style={{ maxWidth:680, margin:"0 auto" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+  const displayList = activeTab === "favorites" ? favoriteTrends : filtered;
+
+  const TABS = [
+    { id:"trends",    label:"Oportunidades", icon:"🌎" },
+    { id:"news",      label:"Noticias",      icon:"📰" },
+    { id:"favorites", label:`Guardados${favorites.length > 0 ? ` (${favorites.length})` : ""}`, icon:"❤️" },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"-apple-system, 'Segoe UI', system-ui, sans-serif", color:C.text }}>
+
+      {/* ── HEADER ── */}
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"16px 16px 0", position:"sticky", top:0, zIndex:40 }}>
+        <div style={{ maxWidth:700, margin:"0 auto" }}>
+
+          {/* Top row */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ width:36, height:36, background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🌎</div>
+              <div style={{ width:38, height:38, background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🌎</div>
               <div>
-                <p style={{ fontSize:9, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>Radar de Oportunidades</p>
-                <h1 style={{ fontSize:20, fontWeight:800, color:C.text, margin:0, letterSpacing:"-0.02em" }}>TrendSpain</h1>
+                <p style={{ fontSize:9, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.16em", margin:0 }}>Radar de Oportunidades</p>
+                <h1 style={{ fontSize:21, fontWeight:900, color:C.text, margin:0, letterSpacing:"-0.03em" }}>TrendSpain</h1>
               </div>
             </div>
-            {isPro
-              ? <span style={{ background:C.greenBg, color:C.green, fontSize:12, fontWeight:700, padding:"6px 14px", borderRadius:99, border:`1px solid rgba(74,222,128,0.2)` }}>✦ Pro activo</span>
-              : <button onClick={() => setShowPaywall(true)} style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0d0d0f", border:"none", borderRadius:10, padding:"9px 16px", fontSize:12, fontWeight:800, cursor:"pointer" }}>✦ Pro — 5€/mes</button>
-            }
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <button onClick={() => setShowCompare(true)}
+                style={{ background:C.indigoBg, border:`1px solid ${C.indigoBorder}`, borderRadius:10, padding:"8px 12px", cursor:"pointer", fontSize:12, color:C.indigo, fontWeight:800 }}>
+                ⚖️ Comparar
+              </button>
+              {isPro
+                ? <span style={{ background:C.greenBg, color:C.green, fontSize:12, fontWeight:800, padding:"7px 14px", borderRadius:99, border:`1px solid ${C.greenBorder}` }}>✦ Pro</span>
+                : <button onClick={() => setShowPaywall(true)} style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0a0a0c", border:"none", borderRadius:10, padding:"9px 16px", fontSize:12, fontWeight:800, cursor:"pointer" }}>✦ Pro — 5€</button>
+              }
+            </div>
           </div>
-          <p style={{ fontSize:12, color:C.textDim, margin:"0 0 14px 48px" }}>Negocios que triunfan en EE.UU. y aún no han llegado a España</p>
+
+          <p style={{ fontSize:11, color:C.textDim, margin:"0 0 12px 50px" }}>Negocios que triunfan en EE.UU. y aún no han llegado a España</p>
 
           {!isPro && (
-            <div style={{ background:tokensLeft>0 ? C.goldBg : C.redBg, border:`1px solid ${tokensLeft>0 ? "rgba(201,168,76,0.25)" : "rgba(248,113,113,0.25)"}`, borderRadius:12, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
-              <div>
-                <p style={{ fontSize:12, color:tokensLeft>0 ? C.gold : C.red, margin:0, fontWeight:700 }}>
-                  {tokensLeft>0 ? `✦ ${tokensLeft} ficha${tokensLeft!==1?"s":""} gratis disponible${tokensLeft!==1?"s":""}` : "✕ Sin fichas gratuitas"}
-                </p>
-                <p style={{ fontSize:11, color:C.textMuted, margin:"2px 0 0" }}>
-                  {tokensLeft>0 ? "Cada ficha abre el análisis completo de 1 negocio" : "Hazte Pro para acceso ilimitado + IA analista"}
-                </p>
-              </div>
-              <button onClick={() => setShowPaywall(true)} style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0d0d0f", border:"none", borderRadius:8, padding:"7px 14px", fontSize:11, fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>Ver todo</button>
+            <div style={{ background:tokensLeft > 0 ? C.goldBg : C.redBg, border:`1px solid ${tokensLeft > 0 ? C.goldBorder : "rgba(248,113,113,0.2)"}`, borderRadius:12, padding:"9px 14px", marginBottom:12, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+              <p style={{ fontSize:12, color:tokensLeft > 0 ? C.gold : C.red, margin:0, fontWeight:700 }}>
+                {tokensLeft > 0 ? `✦ ${tokensLeft} ficha${tokensLeft !== 1 ? "s" : ""} gratis` : "✕ Sin fichas — hazte Pro"}
+              </p>
+              <button onClick={() => setShowPaywall(true)} style={{ background:`linear-gradient(135deg,${C.gold},${C.goldLight})`, color:"#0a0a0c", border:"none", borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:800, cursor:"pointer" }}>Ver todo</button>
             </div>
           )}
 
-          <div style={{ position:"relative", marginBottom:14 }}>
-            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:C.textDim, fontSize:14 }}>🔍</span>
+          {/* Search */}
+          <div style={{ position:"relative", marginBottom:12 }}>
+            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:C.textDim, fontSize:13 }}>🔍</span>
             <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar oportunidad…"
-              style={{ width:"100%", padding:"10px 12px 10px 36px", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, fontSize:14, color:C.text, outline:"none", boxSizing:"border-box" }} />
+              style={{ width:"100%", padding:"10px 12px 10px 34px", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, fontSize:13, color:C.text, outline:"none", boxSizing:"border-box" }} />
           </div>
 
-          <div style={{ display:"flex", overflowX:"auto", gap:0, scrollbarWidth:"none" }}>
+          {/* Sector tabs */}
+          <div style={{ display:"flex", overflowX:"auto", gap:0, scrollbarWidth:"none", marginBottom:0 }}>
             {SECTORES.map(s => (
               <button key={s} onClick={() => setSector(s)}
-                style={{ padding:"10px 11px", fontSize:11, fontWeight:600, border:"none", background:"none", cursor:"pointer", whiteSpace:"nowrap",
-                  borderBottom: sector===s ? `2px solid ${C.gold}` : "2px solid transparent",
-                  color: sector===s ? C.gold : C.textMuted }}>
+                style={{ padding:"9px 10px", fontSize:11, fontWeight:700, border:"none", background:"none", cursor:"pointer", whiteSpace:"nowrap",
+                  borderBottom: sector === s ? `2px solid ${C.gold}` : "2px solid transparent",
+                  color: sector === s ? C.gold : C.textMuted, letterSpacing:"0.01em" }}>
                 {SECTOR_ICON[s]} {s}
+              </button>
+            ))}
+          </div>
+
+          {/* Main tabs */}
+          <div style={{ display:"flex", gap:0, borderTop:`1px solid ${C.border}`, marginTop:0 }}>
+            {TABS.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                style={{ flex:1, padding:"10px 8px", fontSize:12, fontWeight:700, border:"none", background:"none", cursor:"pointer",
+                  borderBottom: activeTab === tab.id ? `2px solid ${C.gold}` : "2px solid transparent",
+                  color: activeTab === tab.id ? C.gold : C.textMuted, letterSpacing:"0.02em" }}>
+                {tab.icon} {tab.label}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div style={{ maxWidth:680, margin:"0 auto", padding:16 }}>
+      {/* ── MAIN ── */}
+      <div style={{ maxWidth:700, margin:"0 auto", padding:16 }}>
 
-        {/* MARKET CHART */}
-        <MarketChart sector={sector} />
+        {/* Tab: Noticias */}
+        {activeTab === "news" && (
+          <NewsSection sector={sector} />
+        )}
 
-        <p style={{ fontSize:12, color:C.textDim, marginBottom:14 }}>
-          <span style={{ fontWeight:700, color:C.text }}>{filtered.length}</span> oportunidades
-          {!isPro && tokensLeft > 0 && <> · <span style={{ color:C.gold }}>✦ {tokensLeft} ficha{tokensLeft!==1?"s":""}</span></>}
-          {!isPro && tokensLeft === 0 && <> · <span style={{ color:C.red }}>sin fichas — <span style={{ cursor:"pointer", textDecoration:"underline" }} onClick={() => setShowPaywall(true)}>hazte Pro</span></span></>}
-        </p>
+        {/* Tab: Oportunidades / Favoritos */}
+        {(activeTab === "trends" || activeTab === "favorites") && (
+          <>
+            {activeTab === "trends" && <MarketChart sector={sector} />}
 
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:12 }}>
-          {filtered.map(t => {
-            const locked = !isPro && tokensLeft === 0;
-            return (
-              <button key={t.id} onClick={() => handleCard(t)}
-                style={{ textAlign:"left", background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:18, cursor:"pointer", transition:"all 0.2s", position:"relative", opacity:locked?0.6:1 }}
-                onMouseEnter={e => { if(!locked){ e.currentTarget.style.borderColor=C.borderGold; e.currentTarget.style.boxShadow=`0 4px 24px rgba(201,168,76,0.08)`; }}}
-                onMouseLeave={e => { e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow="none"; }}>
-                {!isPro && (
-                  <div style={{ position:"absolute", top:12, right:12, background:locked?C.redBg:C.goldBg, borderRadius:99, padding:"2px 9px", fontSize:10, fontWeight:700, color:locked?C.red:C.gold, border:`1px solid ${locked?"rgba(248,113,113,0.2)":"rgba(201,168,76,0.2)"}` }}>
-                    {locked ? "🔒 Pro" : "✦ -1 ficha"}
-                  </div>
-                )}
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-                  <div style={{ paddingRight:60 }}>
-                    <p style={{ fontSize:9, fontWeight:700, color:C.gold, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 4px" }}>{t.sector}</p>
-                    <h3 style={{ fontSize:15, fontWeight:700, color:C.text, margin:0, lineHeight:1.3 }}>{t.nombre}</h3>
-                  </div>
-                  <span style={{ fontSize:26, flexShrink:0 }}>{t.emoji}</span>
+            {activeTab === "favorites" && favorites.length === 0 && (
+              <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                <p style={{ fontSize:32, margin:"0 0 12px" }}>🤍</p>
+                <p style={{ fontSize:15, fontWeight:700, color:C.text, margin:"0 0 6px" }}>Sin guardados todavía</p>
+                <p style={{ fontSize:13, color:C.textMuted, margin:0 }}>Abre cualquier oportunidad y pulsa el corazón para guardarla</p>
+              </div>
+            )}
+
+            {displayList.length > 0 && (
+              <>
+                <p style={{ fontSize:12, color:C.textDim, marginBottom:12 }}>
+                  <span style={{ fontWeight:700, color:C.text }}>{displayList.length}</span> oportunidades
+                  {!isPro && tokensLeft > 0 && <> · <span style={{ color:C.gold }}>✦ {tokensLeft} ficha{tokensLeft !== 1 ? "s" : ""}</span></>}
+                </p>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(290px, 1fr))", gap:12 }}>
+                  {displayList.map(t => {
+                    const locked = !isPro && tokensLeft === 0;
+                    const fav    = favorites.includes(t.id);
+                    return (
+                      <button key={t.id} onClick={() => handleCard(t)}
+                        style={{ textAlign:"left", background:C.card, border:`1px solid ${fav ? "rgba(248,113,113,0.3)" : C.border}`, borderRadius:18, padding:18, cursor:"pointer", position:"relative", opacity:locked ? 0.55 : 1, transition:"border-color 0.15s" }}
+                        onMouseEnter={e => { if (!locked) e.currentTarget.style.borderColor = C.borderGold; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = fav ? "rgba(248,113,113,0.3)" : C.border; }}>
+
+                        <div style={{ position:"absolute", top:0, left:16, right:16, height:1, background:`linear-gradient(90deg, ${C.gold}33, transparent)`, borderRadius:1 }} />
+
+                        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
+                          {fav && <span style={{ fontSize:12 }}>❤️</span>}
+                          {!isPro && (
+                            <span style={{ background:locked ? C.redBg : C.goldBg, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800, color:locked ? C.red : C.gold, border:`1px solid ${locked ? "rgba(248,113,113,0.2)" : C.goldBorder}` }}>
+                              {locked ? "🔒" : "−1"}
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+                          <div style={{ paddingRight:56 }}>
+                            <p style={{ fontSize:9, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 4px" }}>{t.sector}</p>
+                            <h3 style={{ fontSize:15, fontWeight:800, color:C.text, margin:0, lineHeight:1.3 }}>{t.nombre}</h3>
+                          </div>
+                          <span style={{ fontSize:26, flexShrink:0 }}>{t.emoji}</span>
+                        </div>
+                        <p style={{ fontSize:12, color:C.textMuted, lineHeight:1.65, margin:"0 0 14px", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{t.resumen}</p>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          <Pill label={t.potencial} map={POT_STYLE} />
+                          <Pill label={t.dificultad} map={DIF_STYLE} />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-                <p style={{ fontSize:12, color:C.textMuted, lineHeight:1.6, margin:"0 0 14px", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{t.resumen}</p>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  <Pill label={t.potencial} map={POT_STYLE} />
-                  <Pill label={t.dificultad} map={DIF_STYLE} />
-                </div>
-              </button>
-            );
-          })}
-        </div>
+              </>
+            )}
+          </>
+        )}
       </div>
 
-      <TrendModal t={selected} onClose={() => setSelected(null)} isPro={isPro} aiQuestionsLeft={aiQuestionsLeft} onUseAiQuestion={handleUseAiQuestion} onPaywall={() => { setSelected(null); setShowPaywall(true); }} />
-      {showPaywall && <PaywallModal onClose={() => setShowPaywall(false)} />}
-      {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
+      {/* ── MODALS ── */}
+      <TrendModal
+        t={selected}
+        onClose={() => setSelected(null)}
+        isFavorite={selected ? favorites.includes(selected.id) : false}
+        onToggleFavorite={toggleFavorite}
+      />
+      {showCompare  && <CompareModal trends={TRENDS} onClose={() => setShowCompare(false)} />}
+      {showPaywall  && <PaywallModal onClose={() => setShowPaywall(false)} />}
+      {showSuccess  && <SuccessModal onClose={() => setShowSuccess(false)} />}
     </div>
   );
 }
