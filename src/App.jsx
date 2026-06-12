@@ -34,12 +34,10 @@ const C = {
 };
 
 function TarjetaOportunidad({ trend }) {
-  // CONFIGURACIÓN DE ACCESO
-  const tokensGratis = 2; 
-  const haPagado = false; 
-  const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
-
+  const tokensGratis = 0; // Pon 0 para que salte el candado en las PRO
+  const haPagado = false;
   const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
+  const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
 
   return (
     <div 
@@ -47,12 +45,8 @@ function TarjetaOportunidad({ trend }) {
       className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] flex flex-col justify-between min-h-[260px] shadow-lg"
     >
       <div>
-        {/* Cabecera sutil: Inversión y Tiempo */}
         <div className="flex justify-between items-center mb-3 text-[11px]">
-          <span 
-            style={{ color: C.gold }} 
-            className="font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
-          >
+          <span style={{ color: C.gold }} className="font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded">
             {trend.inversion || "Bajo Coste"}
           </span>
           {trend.tiempo && (
@@ -61,6 +55,47 @@ function TarjetaOportunidad({ trend }) {
             </span>
           )}
         </div>
+
+        <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
+          <span className="text-xl">{trend.emoji || "💡"}</span>
+          <span>{trend.nombre}</span>
+        </h3>
+
+        <p className="text-xs mb-3" style={{ color: C.textMuted }}>
+          <span className="font-semibold" style={{ color: C.gold }}>Herramientas:</span> {trend.herramientas}
+        </p>
+
+        <div style={{ borderColor: C.border }} className="border-t my-2 opacity-30" />
+
+        <div className="relative mt-2">
+          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[5px] select-none pointer-events-none opacity-10' : ''}`}>
+            <span style={{ color: C.gold }} className="text-[11px] font-bold uppercase tracking-wider block mb-1">
+              🎯 Plan de Acción:
+            </span>
+            <p style={{ color: C.textMuted }} className="text-xs leading-relaxed font-normal">
+              {trend.estrategia}
+            </p>
+          </div>
+
+          {!tieneAcceso && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/40 backdrop-blur-[3px] rounded-xl">
+              <span className="text-xl mb-1">🔒</span>
+              <p style={{ color: C.text }} className="text-xs font-bold mb-2 tracking-tight">Contenido exclusivo PRO</p>
+              <a href={stripeLink} style={{ backgroundColor: C.gold, color: C.bg }} className="font-bold text-[10px] py-1.5 px-4 rounded-full transition-transform hover:scale-105 shadow-md uppercase tracking-wider">
+                Desbloquear
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-between items-center text-[10px] opacity-60" style={{ color: C.textMuted }}>
+        <span>TrendSpain PRO</span>
+        <span style={{ color: C.gold }}>⭐</span>
+      </div>
+    </div>
+  );
+}
 
         {/* Título fino con su Emoji */}
         <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
