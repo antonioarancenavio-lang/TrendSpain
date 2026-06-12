@@ -697,7 +697,6 @@ export default function App() {
   );
 }
 function TarjetaOportunidad({ oportunidad, tokensGratis, haPagado, onDesbloquear }) {
-  // Evaluamos si el usuario tiene acceso al contenido detallado
   const tieneAcceso = !oportunidad.isPremium || haPagado || tokensGratis > 0;
 
   return (
@@ -705,7 +704,6 @@ function TarjetaOportunidad({ oportunidad, tokensGratis, haPagado, onDesbloquear
       style={{ backgroundColor: C.card, borderColor: C.border }} 
       className="border rounded-xl p-6 text-white shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
     >
-      {/* Cabecera: Etiquetas de Inversión, Tiempo y Estado PRO */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-wrap gap-2">
           <span 
@@ -734,13 +732,11 @@ function TarjetaOportunidad({ oportunidad, tokensGratis, haPagado, onDesbloquear
         )}
       </div>
 
-      {/* Título e Icono */}
       <h3 style={{ color: C.text }} className="text-xl font-bold mb-2 flex items-center gap-2">
         <span>{oportunidad.emoji}</span>
         <span>{oportunidad.nombre}</span>
       </h3>
       
-      {/* Información de Herramientas (Siempre visible) */}
       <div className="space-y-2 my-3 text-sm">
         <p>
           <strong style={{ color: C.text }}>Herramientas sugeridas:</strong>{" "}
@@ -750,11 +746,31 @@ function TarjetaOportunidad({ oportunidad, tokensGratis, haPagado, onDesbloquear
 
       <hr style={{ borderColor: C.border }} className="my-4" />
 
-      {/* Bloque del Plan de Acción (Borroso si está bloqueado) */}
       <div className="relative">
         <div className={`space-y-3 transition-all duration-300 ${!tieneAcceso ? 'blur-md select-none pointer-events-none opacity-30' : ''}`}>
           <h4 style={{ color: C.gold }} className="text-sm font-semibold uppercase tracking-wider">
             🎯 Estrategia de Lanzamiento en España:
           </h4>
           <p style={{ color: C.textMuted }} className="text-sm leading-relaxed whitespace-pre-line">
-            {oportunidad.estrategia || "Contenido detallado del análisis de mercado y pasos
+            {oportunidad.estrategia || "Contenido detallado del análisis."}
+          </p>
+        </div>
+
+        {!tieneAcceso && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/10 backdrop-blur-[1px] rounded-xl">
+            <p style={{ color: C.text }} className="text-sm font-medium mb-3 drop-shadow-md">
+              🔒 Desbloquea la estrategia paso a paso para este negocio
+            </p>
+            <button 
+              onClick={onDesbloquear}
+              style={{ backgroundColor: C.gold, color: C.bg }}
+              className="font-bold text-xs py-2.5 px-5 rounded-lg transition-transform hover:scale-105 shadow-lg shadow-amber-500/10 uppercase tracking-wider"
+            >
+              Usar Ficha o Suscribirse
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
