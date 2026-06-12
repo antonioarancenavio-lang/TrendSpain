@@ -34,87 +34,82 @@ const C = {
 };
 
 function TarjetaOportunidad({ trend }) {
-  // CONFIGURACIÓN LOCAL DE ACCESSOS: 
-  // Modifica el "2" si quieres cambiar las fichas gratis, o pon true/false en haPagado
+  // CONFIGURACIÓN DE ACCESO LOCAL
   const tokensGratis = 2; 
   const haPagado = false; 
   const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
 
-  // Evalúa si el usuario tiene acceso a este negocio
   const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
 
   return (
     <div 
       style={{ backgroundColor: C.card, borderColor: C.border }} 
-      className="border rounded-xl p-6 text-white shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
+      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] hover:shadow-2xl flex flex-col justify-between min-h-[280px]"
     >
-      {/* Etiquetas superiores (Inversión y Tiempo) */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex flex-wrap gap-2">
+      <div>
+        {/* Cabecera estilizada de Categoría / Tags */}
+        <div className="flex justify-between items-center mb-3">
           <span 
-            style={{ backgroundColor: C.goldBg, borderColor: C.borderGold, color: C.gold }} 
-            className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
+            style={{ color: C.gold }} 
+            className="text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
           >
-            {trend.inversion || "Bajo Coste (<300€)"}
+            {trend.inversion || "Bajo Coste"}
           </span>
           {trend.tiempo && (
-            <span 
-              style={{ backgroundColor: C.surface, borderColor: C.border }} 
-              className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
-            >
+            <span style={{ color: C.textMuted }} className="text-xs flex items-center gap-1 opacity-80">
               ⏱️ {trend.tiempo}
             </span>
           )}
         </div>
-        {trend.isPremium && (
-          <span style={{ color: C.gold, borderColor: C.borderGold }} className="text-xs border px-2 py-0.5 rounded font-bold uppercase">
-            PRO
-          </span>
-        )}
-      </div>
 
-      {/* Título e Icono */}
-      <h3 style={{ color: C.text }} className="text-xl font-bold mb-2 flex items-center gap-2">
-        <span>{trend.emoji || "💡"}</span>
-        <span>{trend.nombre}</span>
-      </h3>
-      
-      {/* Herramientas sugerizadas */}
-      <div className="space-y-2 my-3 text-sm">
-        <p>
-          <strong style={{ color: C.text }}>Herramientas:</strong>{" "}
-          <span style={{ color: C.textMuted }}>{trend.herramientas || "No-Code / Gratuitas"}</span>
+        {/* Título limpio e Icono */}
+        <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
+          <span className="text-xl">{trend.emoji || "💡"}</span>
+          <span>{trend.nombre}</span>
+        </h3>
+
+        {/* Herramientas con diseño sutil */}
+        <p className="text-xs mb-4" style={{ color: C.textMuted }}>
+          <span className="font-semibold" style={{ color: C.textDim }}>Herramientas:</span> {trend.herramientas}
         </p>
+
+        {/* Separador fino */}
+        <div style={{ borderColor: C.border }} className="border-t my-3 opacity-40" />
+
+        {/* Bloque de Estrategia / Muro de pago */}
+        <div className="relative mt-2">
+          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[6px] select-none pointer-events-none opacity-10' : ''}`}>
+            <span style={{ color: C.gold }} className="text-[11px] font-bold uppercase tracking-wider block mb-1">
+              🚀 Plan de Acción:
+            </span>
+            <p style={{ color: C.textMuted }} className="text-xs leading-relaxed font-normal">
+              {trend.estrategia}
+            </p>
+          </div>
+
+          {/* Candado de Pago Premium elegante */}
+          {!tieneAcceso && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/5 backdrop-blur-[2px] rounded-xl">
+              <span className="text-lg mb-1.5">🔒</span>
+              <p style={{ color: C.text }} className="text-xs font-semibold mb-2 tracking-tight">
+                Contenido exclusivo PRO
+              </p>
+              <a 
+                href={stripeLink}
+                style={{ backgroundColor: C.gold, color: C.bg }}
+                className="font-bold text-[10px] py-1.5 px-4 rounded-full transition-transform hover:scale-105 shadow-md uppercase tracking-wider"
+              >
+                Desbloquear
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
-      <hr style={{ borderColor: C.border }} className="my-4" />
-
-      {/* Contenido con efecto borroso si está bloqueado */}
-      <div className="relative">
-        <div className={`space-y-3 transition-all duration-300 ${!tieneAcceso ? 'blur-md select-none pointer-events-none opacity-20' : ''}`}>
-          <h4 style={{ color: C.gold }} className="text-sm font-semibold uppercase tracking-wider">
-            🎯 Plan de Acción para España:
-          </h4>
-          <p style={{ color: C.textMuted }} className="text-sm leading-relaxed whitespace-pre-line">
-            {trend.estrategia || "Guía detallada para implementarlo en España de forma sencilla."}
-          </p>
-        </div>
-
-        {/* Muro de Pago (Paywall) */}
-        {!tieneAcceso && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/10 backdrop-blur-[1px] rounded-xl">
-            <p style={{ color: C.text }} className="text-sm font-medium mb-3">
-              🔒 Desbloquea la estrategia para este negocio
-            </p>
-            <a 
-              href={stripeLink}
-              style={{ backgroundColor: C.gold, color: C.bg }}
-              className="font-bold text-xs py-2.5 px-5 rounded-lg transition-transform hover:scale-105 shadow-lg uppercase tracking-wider"
-            >
-              Suscribirse para ver
-            </a>
-          </div>
-        )}
+      {/* Pie de tarjeta estético para igualar alturas */}
+      <div className="mt-4 flex justify-between items-center text-[10px]" style={{ color: C.textDim }}>
+        <span>PRO disponible</span>
+        <span style={{ color: C.gold }}>⭐</span>
       </div>
     </div>
   );
