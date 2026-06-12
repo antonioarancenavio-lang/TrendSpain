@@ -33,72 +33,86 @@ const C = {
   pink:       "#f472b6",
 };
 
-// ─── COMPONENTE: TARJETA DE OPORTUNIDAD ──────────────────────────────────────
-function TarjetaOportunidad({ trend }) {
-  const tokensGratis = 0; // Pon 0 para que salte el candado en las PRO
-  const haPagado = false;
-  const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
-  const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
-
+// ─── COMPONENTE PREMIUM: TARJETA DE OPORTUNIDAD ──────────────────────────────
+function TarjetaOportunidad({ trend, onClick, isFavorite, onToggleFavorite, tieneAcceso }) {
   return (
     <div 
+      onClick={onClick}
       style={{ backgroundColor: C.card, borderColor: C.border }} 
-      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] flex flex-col justify-between min-h-[260px] shadow-lg"
+      className="border rounded-2xl p-5 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[280px] group shadow-sm hover:shadow-xl hover:shadow-amber-900/10"
     >
-      <div>
-        <div className="flex justify-between items-center mb-3 text-[11px]">
-          <span style={{ color: C.gold }} className="font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded">
-            {trend.inversion || "Bajo Coste"}
+      {/* Resplandor sutil dorado en hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${C.gold}15, transparent 60%)` }} />
+
+      <button 
+        onClick={(e) => { e.stopPropagation(); onToggleFavorite(trend.id); }}
+        className="absolute top-4 right-4 z-20 text-xl transition-transform hover:scale-125"
+      >
+        {isFavorite ? "❤️" : "🤍"}
+      </button>
+
+      <div className="relative z-10">
+        <div className="flex justify-between items-center mb-4 pr-8">
+          <span 
+            style={{ 
+              backgroundColor: trend.potencial === "Alta" ? C.greenBg : "rgba(251,191,36,0.1)", 
+              color: trend.potencial === "Alta" ? C.green : C.amber,
+              borderColor: trend.potencial === "Alta" ? C.greenBorder : "rgba(251,191,36,0.2)" 
+            }} 
+            className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border"
+          >
+            🔥 Potencial {trend.potencial}
           </span>
-          {trend.tiempo && (
-            <span style={{ color: C.textMuted }} className="flex items-center gap-1 opacity-80">
-              ⏱️ {trend.tiempo}
-            </span>
-          )}
         </div>
 
-        <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
-          <span className="text-xl">{trend.emoji || "💡"}</span>
-          <span>{trend.nombre}</span>
+        <h3 style={{ color: C.text }} className="text-xl font-extrabold tracking-tight mb-2.5 flex items-start gap-2.5 leading-snug">
+          <span className="text-2xl mt-0.5 filter drop-shadow-md">{trend.emoji}</span>
+          <span className="group-hover:text-amber-400 transition-colors duration-300">{trend.nombre}</span>
         </h3>
 
-        <p className="text-xs mb-3" style={{ color: C.textMuted }}>
-          <span className="font-semibold" style={{ color: C.gold }}>Herramientas:</span> {trend.herramientas || "No-Code / Redes"}
+        <p className="text-[13px] mb-4 line-clamp-2" style={{ color: C.textMuted, lineHeight: 1.6 }}>
+          {trend.resumen}
         </p>
 
-        <div style={{ borderColor: C.border }} className="border-t my-2 opacity-30" />
+        <div style={{ borderColor: C.border }} className="border-t mb-4 opacity-40" />
 
-        <div className="relative mt-2">
-          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[5px] select-none pointer-events-none opacity-10' : ''}`}>
-            <span style={{ color: C.gold }} className="text-[11px] font-bold uppercase tracking-wider block mb-1">
-              🎯 Plan de Acción:
+        <div className="relative">
+          <div className={`transition-all duration-500 ${!tieneAcceso ? 'blur-[5px] select-none opacity-30 grayscale' : ''}`}>
+            <span style={{ color: C.gold }} className="text-[10px] font-bold uppercase tracking-widest block mb-1.5">
+              🎯 Plan para España:
             </span>
-            <p style={{ color: C.textMuted }} className="text-xs leading-relaxed font-normal">
-              {trend.estrategia}
+            <p style={{ color: C.textDim }} className="text-xs leading-relaxed font-medium line-clamp-3">
+              {trend.como_aplicar}
             </p>
           </div>
 
           {!tieneAcceso && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/40 backdrop-blur-[3px] rounded-xl">
-              <span className="text-xl mb-1">🔒</span>
-              <p style={{ color: C.text }} className="text-xs font-bold mb-2 tracking-tight">Contenido exclusivo PRO</p>
-              <a href={stripeLink} style={{ backgroundColor: C.gold, color: C.bg }} className="font-bold text-[10px] py-1.5 px-4 rounded-full transition-transform hover:scale-105 shadow-md uppercase tracking-wider">
-                Desbloquear
-              </a>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="bg-[#0a0a0c]/80 backdrop-blur-md rounded-xl p-3.5 border border-white/5 shadow-2xl flex flex-col items-center transform transition-transform group-hover:scale-105">
+                <span className="text-2xl mb-1">🔒</span>
+                <p style={{ color: C.text }} className="text-[11px] font-bold mb-2.5 tracking-wide uppercase">Contenido Exclusivo PRO</p>
+                <span style={{ backgroundColor: C.gold, color: C.bg }} className="font-extrabold text-[9px] py-1.5 px-4 rounded-full uppercase tracking-widest shadow-lg">
+                  Desbloquear
+                </span>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-4 flex justify-between items-center text-[10px] opacity-60" style={{ color: C.textMuted }}>
-        <span>TrendSpain PRO</span>
-        {trend.isPremium && <span style={{ color: C.gold, borderColor: C.borderGold }} className="text-xs border px-2 py-0.5 rounded font-bold">PRO</span>}
+      <div className="mt-5 flex justify-between items-center text-[10px] font-semibold tracking-wider relative z-10" style={{ color: C.textMuted }}>
+        <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-md">
+          ⏱️ Dificultad: {trend.dificultad}
+        </span>
+        <span style={{ color: C.gold, borderColor: C.goldBorder }} className="bg-amber-500/10 px-2.5 py-1 rounded-md border">
+          PRO ⭐
+        </span>
       </div>
     </div>
   );
 }
 
-// ─── BASE DE DATOS: TRENDS ───────────────────────────────────────────────────
+// ─── BASE DE DATOS ORIGINAL: TRENDS ──────────────────────────────────────────
 const TRENDS = [
   { id:1,  nombre:"Dark Kitchen con Suscripción",        emoji:"🍱", sector:"Food & Drink",    potencial:"Alta",  dificultad:"Fácil",    resumen:"Cocinas fantasma con planes de comida semanal por suscripción, sin local físico.", por_que:"En EE.UU. el modelo dark kitchen explotó post-COVID. Añadir suscripción mensual garantiza ingresos recurrentes y reduce el desperdicio.", como_aplicar:"España tiene cultura gastronómica altísima pero poca oferta de comida saludable por suscripción. Ciudades medianas como Valencia o Bilbao son ideales.", riesgos:["Logística propia o dependencia de Glovo/Uber","Fidelización difícil si la calidad baja","Regulación sanitaria estricta"], pasos:["Alquilar espacio en una cloud kitchen","Definir nicho: vegano, mediterráneo o menú ejecutivo","Lanzar con 50 suscriptores piloto","Automatizar pedidos con Shopify"] },
   { id:2,  nombre:"Clínicas de Salud Mental Online",     emoji:"🧠", sector:"Salud",            potencial:"Alta",  dificultad:"Moderada", resumen:"Plataformas que conectan psicólogos con pacientes por videollamada.", por_que:"BetterHelp factura más de 700M$ anuales. La pandemia normalizó la terapia online y la demanda no ha bajado.", como_aplicar:"España tiene lista de espera de meses en salud mental pública. Diferenciarse por especialidad y precio accesible es la clave.", riesgos:["Necesitas psicólogos colegiados","Competencia de apps internacionales","Retención si el paciente prefiere presencial"], pasos:["Montar plataforma con Calendly + Stripe + Zoom","Reclutar 5-10 psicólogos autónomos","Nicho inicial: ansiedad laboral B2B","Certificar cumplimiento LOPD/RGPD"] },
@@ -513,71 +527,40 @@ export default function App() {
         {/* Tab: Noticias */}
         {activeTab === "news" && <NewsSection sector={sector} />}
 
-        {/* Tab: Oportunidades / Favoritos */}
+        {/* Tab: Oportunidades y Favoritos unificados con Tarjetas Premium */}
         {(activeTab === "trends" || activeTab === "favorites") && (
           <>
             {activeTab === "trends" && <MarketChart data={STATIC_MARKET[sector] || STATIC_MARKET["Todos"]} />}
 
-            {/* AQUÍ ESTÁ EL GRID DE TARJETAS QUE QUERÍAS */}
-            {activeTab === "trends" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                {Object.keys(STATIC_MARKET || {}).map((categoriaKey) => {
-                  const categoria = STATIC_MARKET[categoriaKey];
-                  return (categoria.datos || []).map((item, index) => (
-                    <TarjetaOportunidad 
-                      key={`${categoriaKey}-${index}`}
-                      trend={{
-                        nombre: item.nombre,
-                        emoji: index % 2 === 0 ? "🚀" : "💡",
-                        isPremium: true,
-                        inversion: "Bajo Coste (<300€)",
-                        tiempo: "1-3 días",
-                        herramientas: "No-Code / Redes",
-                        estrategia: `Plan para España: Valida ${item.nombre} montando una landing page. El mercado en USA ya factura ${item.mercadoUSA}M, mientras que en España el volumen actual es de ${item.mercadoES}M con un crecimiento del ${item.crecimiento}%.`
-                      }}
-                    />
-                  ));
-                })}
-              </div>
-            )}
-
             {activeTab === "favorites" && favorites.length === 0 && (
-              <div style={{ textAlign:"center", padding:"40px 20px" }}>
-                <p style={{ fontSize:32, margin:"0 0 12px" }}>🤍</p>
-                <p style={{ fontSize:15, fontWeight:700, color:C.text, margin:"0 0 6px" }}>Sin guardados todavía</p>
-                <p style={{ fontSize:13, color:C.textMuted, margin:0 }}>Abre cualquier oportunidad y pulsa el corazón para guardarla</p>
+              <div style={{ textAlign:"center", padding:"50px 20px" }}>
+                <p style={{ fontSize:40, margin:"0 0 16px" }}>🤍</p>
+                <p style={{ fontSize:18, fontWeight:800, color:C.text, margin:"0 0 8px" }}>Sin guardados todavía</p>
+                <p style={{ fontSize:14, color:C.textMuted, margin:0, lineHeight:1.5 }}>Explora las oportunidades y pulsa el corazón para construir tu cartera de negocios.</p>
               </div>
             )}
 
-            {/* Listado nativo para favoritos */}
-            {activeTab === "favorites" && displayList.length > 0 && (
+            {displayList.length > 0 && (
               <>
-                <p style={{ fontSize:12, color:C.textDim, marginBottom:12 }}>
-                  <span style={{ fontWeight:700, color:C.text }}>{displayList.length}</span> oportunidades guardadas
-                </p>
-                <div style={{ display:"grid", gap:14 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:16 }}>
+                  <p style={{ fontSize:13, color:C.textDim, margin:0 }}>
+                    <span style={{ fontWeight:800, color:C.text }}>{displayList.length}</span> negocios encontrados
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {displayList.map(t => {
                     const isF = favorites.includes(t.id);
+                    const tieneAcceso = isPro || tokensLeft > 0;
                     return (
-                      <button key={t.id} onClick={() => handleCard(t)} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, textAlign:"left", cursor:"pointer", transition:"0.2s", position:"relative", width:"100%" }}>
-                        <div style={{ position:"absolute", top:14, right:14 }}>
-                          <div onClick={(e) => { e.stopPropagation(); toggleFavorite(t.id); }} style={{ fontSize:16 }}>
-                            {isF ? "❤️" : "🤍"}
-                          </div>
-                        </div>
-                        <div style={{ display:"flex", gap:14, marginBottom:12 }}>
-                          <div style={{ flex:1 }}>
-                            <p style={{ fontSize:9, fontWeight:800, color:C.indigo, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 4px" }}>{t.sector}</p>
-                            <h3 style={{ fontSize:15, fontWeight:800, color:C.text, margin:0, lineHeight:1.3 }}>{t.nombre}</h3>
-                          </div>
-                          <span style={{ fontSize:26, flexShrink:0 }}>{t.emoji}</span>
-                        </div>
-                        <p style={{ fontSize:12, color:C.textMuted, lineHeight:1.65, margin:"0 0 14px", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{t.resumen}</p>
-                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                          <Pill label={t.potencial} map={POT_STYLE} />
-                          <Pill label={t.dificultad} map={DIF_STYLE} />
-                        </div>
-                      </button>
+                      <TarjetaOportunidad 
+                        key={t.id}
+                        trend={t}
+                        isFavorite={isF}
+                        onToggleFavorite={toggleFavorite}
+                        onClick={() => handleCard(t)}
+                        tieneAcceso={tieneAcceso}
+                      />
                     );
                   })}
                 </div>
