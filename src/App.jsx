@@ -34,53 +34,90 @@ const C = {
 };
 
 function TarjetaOportunidad({ trend }) {
-  // CONFIGURACIÓN LOCAL DE ACCESSOS: 
-  // Modifica el "2" si quieres cambiar las fichas gratis, o pon true/false en haPagado
-  // CONFIGURACIÓN DE ACCESO LOCAL
+  // CONFIGURACIÓN DE ACCESO
   const tokensGratis = 2; 
   const haPagado = false; 
   const stripeLink = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
 
-  // Evalúa si el usuario tiene acceso a este negocio
   const tieneAcceso = !trend.isPremium || haPagado || tokensGratis > 0;
 
   return (
     <div 
       style={{ backgroundColor: C.card, borderColor: C.border }} 
-      className="border rounded-xl p-6 text-white shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
-      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] hover:shadow-2xl flex flex-col justify-between min-h-[280px]"
+      className="border rounded-2xl p-5 text-white relative overflow-hidden transition-all duration-200 hover:translate-y-[-2px] flex flex-col justify-between min-h-[260px] shadow-lg"
     >
-      {/* Etiquetas superiores (Inversión y Tiempo) */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex flex-wrap gap-2">
       <div>
-        {/* Cabecera estilizada de Categoría / Tags */}
-        <div className="flex justify-between items-center mb-3">
+        {/* Cabecera sutil: Inversión y Tiempo */}
+        <div className="flex justify-between items-center mb-3 text-[11px]">
           <span 
-            style={{ backgroundColor: C.goldBg, borderColor: C.borderGold, color: C.gold }} 
-            className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
             style={{ color: C.gold }} 
-            className="text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
+            className="font-bold uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded"
           >
-            {trend.inversion || "Bajo Coste (<300€)"}
             {trend.inversion || "Bajo Coste"}
           </span>
           {trend.tiempo && (
-            <span 
-              style={{ backgroundColor: C.surface, borderColor: C.border }} 
-              className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
-            >
-            <span style={{ color: C.textMuted }} className="text-xs flex items-center gap-1 opacity-80">
+            <span style={{ color: C.textMuted }} className="flex items-center gap-1 opacity-80">
               ⏱️ {trend.tiempo}
             </span>
           )}
         </div>
+
+        {/* Título fino con su Emoji */}
+        <h3 style={{ color: C.text }} className="text-lg font-bold tracking-tight mb-1 flex items-center gap-1.5">
+          <span className="text-xl">{trend.emoji || "💡"}</span>
+          <span>{trend.nombre}</span>
+        </h3>
+
+        {/* Subtítulo de herramientas */}
+        <p className="text-xs mb-3" style={{ color: C.textMuted }}>
+          <span className="font-semibold" style={{ color: C.gold }}>Herramientas:</span> {trend.herramientas}
+        </p>
+
+        {/* Línea divisoria muy fina */}
+        <div style={{ borderColor: C.border }} className="border-t my-2 opacity-30" />
+
+        {/* Contenido / Plan de acción con Paywall */}
+        <div className="relative mt-2">
+          <div className={`transition-all duration-300 ${!tieneAcceso ? 'blur-[5px] select-none pointer-events-none opacity-10' : ''}`}>
+            <span style={{ color: C.gold }} className="text-[11px] font-bold uppercase tracking-wider block mb-1">
+              🎯 Plan de Acción:
+            </span>
+            <p style={{ color: C.textMuted }} className="text-xs leading-relaxed font-normal">
+              {trend.estrategia}
+            </p>
+          </div>
+
+          {/* Capa de Bloqueo Premium */}
+          {!tieneAcceso && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/40 backdrop-blur-[3px] rounded-xl">
+              <span className="text-xl mb-1">🔒</span>
+              <p style={{ color: C.text }} className="text-xs font-bold mb-2 tracking-tight">
+                Contenido exclusivo PRO
+              </p>
+              <a 
+                href={stripeLink}
+                style={{ backgroundColor: C.gold, color: C.bg }}
+                className="font-bold text-[10px] py-1.5 px-4 rounded-full transition-transform hover:scale-105 shadow-md uppercase tracking-wider"
+              >
+                Desbloquear
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Pie de tarjeta estético para cuadrar espacios */}
+      <div className="mt-4 flex justify-between items-center text-[10px] opacity-60" style={{ color: C.textMuted }}>
+        <span>TrendSpain PRO</span>
         {trend.isPremium && (
-          <span style={{ color: C.gold, borderColor: C.borderGold }} className="text-xs border px-2 py-0.5 rounded font-bold uppercase">
+          <span style={{ color: C.gold, borderColor: C.borderGold }} className="text-xs border px-2 py-0.5 rounded font-bold">
             PRO
           </span>
         )}
       </div>
+    </div>
+  );
+}
 
       {/* Título e Icono */}
       <h3 style={{ color: C.text }} className="text-xl font-bold mb-2 flex items-center gap-2">
