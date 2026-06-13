@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/TU_LINK_REAL_AQUI";
@@ -61,17 +61,20 @@ const STATIC_NEWS = [
   { titulo:"El padel sigue rompiendo récords de jugadores", resumen:"Demanda altísima de instalaciones premium cubiertas.", sector:"Fitness", impacto:"Alto", tag:"Tendencia" },
 ];
 
-const STATIC_MARKET = {
-  "Todos": { insight: "El mercado de bienestar y servicios en EE.UU. es 6-10x mayor.", datos: [ { nombre:"Meal Prep", mercadoUSA:65, mercadoES:1.2 }, { nombre:"Salud Mental", mercadoUSA:120, mercadoES:2.5 }, { nombre:"Padel",mercadoUSA:10, mercadoES:2.0 }, { nombre:"Alquiler Vac.", mercadoUSA:90, mercadoES:8.5 } ] },
-  "Food & Drink": { insight: "Las dark kitchens mueven decenas de miles de millones en EE.UU.", datos: [ { nombre:"Dark Kitchens", mercadoUSA:45, mercadoES:0.8 }, { nombre:"Zumos en Frío", mercadoUSA:20, mercadoES:0.3 } ] },
-  "Fitness": { insight: "Los estudios boutique crecen con fuerza en mercados maduros.", datos: [ { nombre:"Estudios Boutique",mercadoUSA:35, mercadoES:1.0 }, { nombre:"Crioterapia", mercadoUSA:8, mercadoES:0.1 } ] },
-  "Salud": { insight: "La telesalud mental multiplica por 50x el mercado español.", datos: [ { nombre:"Terapia Online", mercadoUSA:120, mercadoES:2.5 }, { nombre:"Concierge Mayores",mercadoUSA:30, mercadoES:0.5 } ] },
-  "Tech": { insight: "El SaaS vertical para PYMEs está en ebullición.", datos: [ { nombre:"SaaS Clínicas", mercadoUSA:18, mercadoES:0.3 }, { nombre:"IA Marketing", mercadoUSA:40, mercadoES:1.5 } ] },
-  "Retail": { insight: "El re-commerce y el live shopping lideran el crecimiento.", datos: [ { nombre:"Segunda Mano", mercadoUSA:55, mercadoES:3.0 }, { nombre:"Cajas Suscripción",mercadoUSA:15, mercadoES:0.5 } ] },
-  "Servicios": { insight: "La profesionalización de servicios básicos eleva el ticket.", datos: [ { nombre:"Alquiler Vac.", mercadoUSA:90, mercadoES:8.5 }, { nombre:"Lavanderías 24h",mercadoUSA:12, mercadoES:0.6 } ] },
-  "Educación": { insight: "Las tutorías online y edtech B2C viven una época dorada.", datos: [ { nombre:"Tutorías Online",mercadoUSA:45, mercadoES:1.2 }, { nombre:"Finanzas",mercadoUSA:10,mercadoES:0.2 } ] },
-  "Sostenibilidad": { insight: "La normativa obliga a transformar residuos y energía.", datos: [ { nombre:"Solar",mercadoUSA:25,mercadoES:0.4 }, { nombre:"Gestión Residuos", mercadoUSA:30, mercadoES:0.5 } ] }
+// Evolución del valor de negocios emergentes (miles de millones de $/€) por año.
+// Datos estáticos de ejemplo para ilustrar la brecha y tendencia EE.UU. vs España.
+const EVOLUCION_MERCADO = {
+  "Todos":          { usa: [180, 210, 250, 300, 350, 410, 480], es: [12, 14, 17, 21, 25, 30, 36] },
+  "Food & Drink":   { usa: [40, 48, 58, 70, 82, 96, 112],       es: [2.2, 2.6, 3.1, 3.7, 4.4, 5.2, 6.1] },
+  "Fitness":        { usa: [22, 26, 31, 37, 44, 52, 61],        es: [1.8, 2.1, 2.5, 3.0, 3.6, 4.3, 5.1] },
+  "Salud":          { usa: [60, 75, 92, 112, 135, 162, 194],    es: [3.0, 3.6, 4.3, 5.2, 6.2, 7.4, 8.9] },
+  "Tech":           { usa: [38, 50, 65, 84, 108, 138, 175],     es: [1.5, 2.0, 2.7, 3.6, 4.8, 6.4, 8.5] },
+  "Retail":         { usa: [35, 42, 50, 60, 72, 86, 103],       es: [3.5, 4.1, 4.8, 5.6, 6.6, 7.7, 9.0] },
+  "Servicios":      { usa: [50, 58, 67, 78, 90, 104, 120],      es: [9.0, 10.2, 11.6, 13.1, 14.9, 16.9, 19.2] },
+  "Educación":      { usa: [28, 33, 39, 46, 54, 64, 75],        es: [1.2, 1.4, 1.7, 2.0, 2.4, 2.9, 3.4] },
+  "Sostenibilidad": { usa: [25, 32, 41, 52, 66, 84, 107],       es: [1.0, 1.3, 1.7, 2.2, 2.8, 3.6, 4.6] },
 };
+const ANIOS = ["2019","2020","2021","2022","2023","2024","2025"];
 
 // ─── COMPONENTES SECUNDARIOS ─────────────────────────────────────────────────
 function NewsSection({ sector }) {
@@ -89,20 +92,33 @@ function NewsSection({ sector }) {
   );
 }
 
-function MarketChart({ data }) {
-  if (!data || !data.datos) return null;
-  return (
-    <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"18px 16px", marginBottom:20 }}>
-      <p style={{ fontSize:11, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.14em", margin:"0 0 10px" }}>📊 Mercado — EE.UU. vs España</p>
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={data.datos} margin={{ top:10, right:10, left:-10, bottom:0 }}>
-          <XAxis dataKey="nombre" tick={{ fill:C.textMuted, fontSize:10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill:C.textDim, fontSize:10 }} axisLine={false} tickLine={false} unit="B" />
-          <Tooltip contentStyle={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, fontSize:12 }} itemStyle={{ color:C.text }} />
-          <Bar dataKey="mercadoUSA" name="EE.UU." fill={C.borderGold} radius={[4,4,0,0]} />
-          <Bar dataKey="mercadoES" name="España" fill={C.indigo} radius={[4,4,0,0]} />
-        </BarChart>
+function MarketChart({ sector }) {
+  const serie = EVOLUCION_MERCADO[sector] || EVOLUCION_MERCADO["Todos"];
+  const dataUSA = ANIOS.map((a, i) => ({ anio:a, valor: serie.usa[i] }));
+  const dataES  = ANIOS.map((a, i) => ({ anio:a, valor: serie.es[i] }));
+
+  const Panel = ({ title, flag, data, color, unit }) => (
+    <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 14px", flex:1, minWidth:0 }}>
+      <p style={{ fontSize:11, fontWeight:800, color, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 4px" }}>{flag} {title}</p>
+      <p style={{ fontSize:10, color:C.textDim, margin:"0 0 8px" }}>Valor de negocios emergentes ({unit}, miles de millones)</p>
+      <ResponsiveContainer width="100%" height={170}>
+        <LineChart data={data} margin={{ top:10, right:10, left:-15, bottom:0 }}>
+          <XAxis dataKey="anio" tick={{ fill:C.textMuted, fontSize:10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill:C.textDim, fontSize:10 }} axisLine={false} tickLine={false} />
+          <Tooltip contentStyle={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, fontSize:12 }} itemStyle={{ color:C.text }} labelStyle={{ color:C.textMuted }} formatter={(v) => [`${v}${unit}`, "Valor"]} />
+          <Line type="monotone" dataKey="valor" stroke={color} strokeWidth={2.5} dot={{ r:3, fill:color }} activeDot={{ r:5 }} />
+        </LineChart>
       </ResponsiveContainer>
+    </div>
+  );
+
+  return (
+    <div style={{ marginBottom:20 }}>
+      <p style={{ fontSize:11, fontWeight:800, color:C.gold, textTransform:"uppercase", letterSpacing:"0.14em", margin:"0 0 10px" }}>📈 Evolución del mercado — España vs EE.UU.</p>
+      <div className="market-charts" style={{ display:"flex", gap:14 }}>
+        <Panel title="España" flag="🇪🇸" data={dataES} color={C.indigo} unit="€" />
+        <Panel title="Estados Unidos" flag="🇺🇸" data={dataUSA} color={C.gold} unit="$" />
+      </div>
     </div>
   );
 }
@@ -456,7 +472,7 @@ export default function App() {
         .trend-card-emoji, .trend-card-title, .trend-card-cta, .trend-card-glow { transition: all 0.25s ease; }
 
         @media (max-width: 640px) {
-          .metric-grid, .compare-grid { grid-template-columns: 1fr !important; }
+          .metric-grid, .compare-grid, .market-charts { grid-template-columns: 1fr !important; flex-direction: column !important; }
           .hero-flex { flex-direction: column; }
         }
       `}</style>
@@ -464,8 +480,10 @@ export default function App() {
       {/* ── HEADER FIJO ── */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"16px 16px 0", position:"sticky", top:0, zIndex:40 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:28, height:28, borderRadius:8, background:`linear-gradient(135deg, ${C.gold}, ${C.goldLight})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, color:"#000", fontSize:14 }}>T</div>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:34, height:34, borderRadius:"50%", background:"#f4f1ea", flexShrink:0, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", border:`1px solid ${C.border}` }}>
+              <img src="/logo.png" alt="TrendSpain" style={{ width:"180%", height:"180%", objectFit:"cover", objectPosition:"center 38%" }} />
+            </div>
             <h1 style={{ fontSize:18, fontWeight:900, margin:0 }}>TrendSpain</h1>
           </div>
           <div style={{ display:"flex", gap:8 }}>
@@ -503,7 +521,7 @@ export default function App() {
 
         {(activeTab === "trends" || activeTab === "favorites") && (
           <>
-            {activeTab === "trends" && <MarketChart data={STATIC_MARKET[sector] || STATIC_MARKET["Todos"]} />}
+            {activeTab === "trends" && <MarketChart sector={sector} />}
 
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:10 }}>
               <p style={{ fontSize:13, color:C.textDim, margin:0 }}>
